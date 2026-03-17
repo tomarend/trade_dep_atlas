@@ -108,49 +108,49 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | — | Pending |
-| DATA-02 | — | Pending |
-| DATA-03 | — | Pending |
-| DATA-04 | — | Pending |
-| DATA-05 | — | Pending |
-| SCOR-01 | — | Pending |
-| SCOR-02 | — | Pending |
-| SCOR-03 | — | Pending |
-| SCOR-04 | — | Pending |
-| SCOR-05 | — | Pending |
-| CNTV-01 | — | Pending |
-| CNTV-02 | — | Pending |
-| CNTV-03 | — | Pending |
-| CNTV-04 | — | Pending |
-| CNTV-05 | — | Pending |
-| CNTV-06 | — | Pending |
-| CNTV-07 | — | Pending |
-| PRDV-01 | — | Pending |
-| PRDV-02 | — | Pending |
-| PRDV-03 | — | Pending |
-| PRDV-04 | — | Pending |
-| PRDV-05 | — | Pending |
-| PRDV-06 | — | Pending |
-| TIME-01 | — | Pending |
-| TIME-02 | — | Pending |
-| TIME-03 | — | Pending |
-| VIZZ-01 | — | Pending |
-| VIZZ-02 | — | Pending |
-| VIZZ-03 | — | Pending |
-| VIZZ-04 | — | Pending |
-| VIZZ-05 | — | Pending |
-| VIZZ-06 | — | Pending |
-| DASH-01 | — | Pending |
-| DASH-02 | — | Pending |
-| DASH-03 | — | Pending |
-| DASH-04 | — | Pending |
-| DASH-05 | — | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 2 | Pending |
+| SCOR-01 | Phase 2 | Pending |
+| SCOR-02 | Phase 2 | Pending |
+| SCOR-03 | Phase 2 | Pending |
+| SCOR-04 | Phase 2 | Pending |
+| SCOR-05 | Phase 4 | Pending |
+| CNTV-01 | Phase 4 | Pending |
+| CNTV-02 | Phase 4 | Pending |
+| CNTV-03 | Phase 4 | Pending |
+| CNTV-04 | Phase 4 | Pending |
+| CNTV-05 | Phase 4 | Pending |
+| CNTV-06 | Phase 4 | Pending |
+| CNTV-07 | Phase 5 | Pending |
+| PRDV-01 | Phase 5 | Pending |
+| PRDV-02 | Phase 5 | Pending |
+| PRDV-03 | Phase 5 | Pending |
+| PRDV-04 | Phase 5 | Pending |
+| PRDV-05 | Phase 5 | Pending |
+| PRDV-06 | Phase 5 | Pending |
+| TIME-01 | Phase 6 | Pending |
+| TIME-02 | Phase 6 | Pending |
+| TIME-03 | Phase 6 | Pending |
+| VIZZ-01 | Phase 4 | Pending |
+| VIZZ-02 | Phase 6 | Pending |
+| VIZZ-03 | Phase 4 | Pending |
+| VIZZ-04 | Phase 4 | Pending |
+| VIZZ-05 | Phase 4 | Pending |
+| VIZZ-06 | Phase 6 | Pending |
+| DASH-01 | Phase 3 | Pending |
+| DASH-02 | Phase 3 | Pending |
+| DASH-03 | Phase 3 | Pending |
+| DASH-04 | Phase 3 | Pending |
+| DASH-05 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 37 total
-- Mapped to phases: 0
-- Unmapped: 37 ⚠️
+- Mapped to phases: 37
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-03-17*
-*Last updated: 2026-03-17 after initialization*
+*Last updated: 2026-03-17 after roadmap creation*
