@@ -1,0 +1,13 @@
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+*.duckdb
+*.duckdb.wal
+__pycache__/
+*.pyc
+.venv/
+.ruff_cache/
+dist/
+*.egg-info/
+.pytest_cache/

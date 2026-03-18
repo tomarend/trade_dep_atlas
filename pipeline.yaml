@@ -1,0 +1,17 @@
+baci:
+  download_page: "https://www.cepii.fr/DATA_DOWNLOAD/baci/doc/baci_webpage.html"
+  raw_dir: "data/raw"
+  retry_count: 3
+  retry_backoff_seconds: 5
+  chunk_size_bytes: 65536
+  request_timeout_seconds: 300
+
+processing:
+  processed_dir: "data/processed"
+  reference_dir: "data/reference"
+  target_hs_revision: "H6"
+
+output:
+  format: "parquet"
+  partition_by: "year"
+  compression: "zstd"

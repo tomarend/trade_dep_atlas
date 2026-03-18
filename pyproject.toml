@@ -1,0 +1,33 @@
+[project]
+name = "dashboard-trade-crit-dep"
+version = "0.1.0"
+description = "Trade critical dependencies dashboard — exploring import vulnerabilities at the product level"
+requires-python = ">=3.12"
+dependencies = [
+    "dash>=4.0.0",
+    "plotly>=6.6.0",
+    "dash-bootstrap-components>=2.0.4",
+    "dash-cytoscape>=1.0.2",
+    "dash-ag-grid>=33.3.3",
+    "polars>=1.36.1",
+    "pyarrow>=23.0.1",
+    "duckdb>=1.5.0",
+    "pandas>=3.0.1",
+    "numpy>=2.4.3",
+    "requests>=2.32.5",
+    "pycountry>=26.2.16",
+    "tqdm>=4.67.3",
+    "loguru>=0.7.3",
+    "gunicorn>=25.1.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["ruff>=0.15.6", "pytest>=9.0.2"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
