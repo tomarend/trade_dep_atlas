@@ -47,12 +47,13 @@ Plans:
   3. Products are classified into essentiality tiers (critical/important/standard) using EU CRM lists, USGS critical minerals, and sector categorization
   4. Composite dependency score combines HHI, geo risk, and essentiality with configurable weights
   5. All pre-computed metrics are stored in DuckDB and queryable in <50ms for typical dashboard queries
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
-- [ ] 02-03: TBD
+- [ ] 02-01-PLAN.md — HHI concentration scoring module (pipeline/hhi.py + tests)
+- [ ] 02-02-PLAN.md — Geo-risk scoring module (pipeline/georisk.py + reference data + tests)
+- [ ] 02-03-PLAN.md — Essentiality classification (config YAML + CSV files + pipeline/essentiality.py + tests)
+- [ ] 02-04-PLAN.md — Composite score + DuckDB export + CLI wiring (pipeline/composite.py, export.py, __main__.py)
 
 ### Phase 3: Dashboard Shell & Data Access
 **Goal**: The Dash application is running with multi-page routing, shared navigation, data access layer, and methodology documentation
