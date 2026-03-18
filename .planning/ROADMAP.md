@@ -30,12 +30,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Pipeline ingests multi-GB BACI CSVs using Polars lazy evaluation without exceeding available memory
   3. All HS6 product codes are mapped to a single consistent revision across the full time series via concordance tables
   4. All country identifiers resolve to ISO3 codes with no unresolved or ambiguous mappings
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
-- [ ] 01-03: TBD
+- [ ] 01-01-PLAN.md — Project scaffolding + BACI download module with retry and resume
+- [ ] 01-02-PLAN.md — Country code mapping (ISO3) + HS concordance pipeline
+- [ ] 01-03-PLAN.md — Core ingestion pipeline (Polars ETL) + CLI orchestrator
 
 ### Phase 2: Scoring Pipeline & Storage
 **Goal**: Every product-importer pair has HHI, geopolitical risk, essentiality, and composite dependency scores computed and stored for fast querying
@@ -126,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline & Ingestion | 0/3 | Not started | - |
+| 1. Data Pipeline & Ingestion | 0/3 | Planned | - |
 | 2. Scoring Pipeline & Storage | 0/3 | Not started | - |
 | 3. Dashboard Shell & Data Access | 0/3 | Not started | - |
 | 4. Country→Products View | 0/4 | Not started | - |
@@ -135,4 +135,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 ---
 *Roadmap created: 2026-03-17*
-*Last updated: 2026-03-17*
+*Last updated: 2026-03-18*
