@@ -50,10 +50,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — HHI concentration scoring module (pipeline/hhi.py + tests)
-- [ ] 02-02-PLAN.md — Geo-risk scoring module (pipeline/georisk.py + reference data + tests)
-- [ ] 02-03-PLAN.md — Essentiality classification (config YAML + CSV files + pipeline/essentiality.py + tests)
-- [ ] 02-04-PLAN.md — Composite score + DuckDB export + CLI wiring (pipeline/composite.py, export.py, __main__.py)
+- [x] 02-01-PLAN.md — HHI concentration scoring module (pipeline/hhi.py + tests)
+- [x] 02-02-PLAN.md — Geo-risk scoring module (pipeline/georisk.py + reference data + tests)
+- [x] 02-03-PLAN.md — Essentiality classification (config YAML + CSV files + pipeline/essentiality.py + tests)
+- [x] 02-04-PLAN.md — Composite score + DuckDB export + CLI wiring (pipeline/composite.py, export.py, __main__.py)
 
 ### Phase 3: Dashboard Shell & Data Access
 **Goal**: The Dash application is running with multi-page routing, shared navigation, data access layer, and methodology documentation
