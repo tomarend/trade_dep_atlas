@@ -1,0 +1,87 @@
+# Essentiality tier configuration
+# Three tiers with score ranges and sector classification rules.
+# "Highest tier wins" — if a product qualifies for multiple sectors, it gets the highest tier.
+# Within-tier score = tier_min + (tier_max - tier_min) × global_export_hhi
+# Sources: EU CRM 2023 list, USGS Critical Minerals List 2022, sector categorization
+# Last updated: 2026-03-18
+
+tiers:
+  critical:
+    score_range: [0.85, 1.0]
+    description: "Critical raw materials, energy commodities, fertilizers, pharma APIs, semiconductor materials"
+    sectors:
+      - name: critical_raw_materials
+        source: "EU CRM 2023 + USGS Critical Minerals 2022"
+        note: "HS6 codes defined in crm_hs6_mapping.csv and essentiality_hs6.csv overrides"
+
+      - name: energy_commodities
+        source: "sector_categorization"
+        label: "Energy"
+        hs2_include: ["27"]
+        hs4_exclude: ["2716"]   # Electric current — not a physical energy commodity
+        note: "HS27 = mineral fuels, oils, waxes. Exclude 2716 (electric energy, not a scarce commodity)"
+
+      - name: fertilizers
+        source: "sector_categorization"
+        label: "Fertilizers"
+        hs4_include:
+          - "3102"   # Mineral nitrogen fertilizers
+          - "3103"   # Mineral phosphate fertilizers
+          - "3104"   # Mineral potash fertilizers
+          - "3105"   # Mineral fertilizer mixtures
+          - "2510"   # Natural calcium phosphates (phosphate rock)
+          - "2809"   # Diphosphorus pentaoxide; phosphoric acid
+        note: "Nitrogen, phosphorus, potassium — the NPK triangle. Phosphate rock is single-source (Morocco)"
+
+      - name: pharma_apis
+        source: "sector_categorization"
+        label: "Pharma APIs"
+        hs2_include: ["29"]
+        note: "HS29 = organic chemicals (pharma active ingredients, bulk APIs). Finished pharma = HS30 (important tier)"
+
+      - name: semiconductor_materials
+        source: "sector_categorization"
+        label: "Semiconductor Materials"
+        hs6_include:
+          - "280469"   # Silicon (other) — semiconductor-grade silicon
+          - "280470"   # Silicon (other form) — solar/semiconductor
+          - "284961"   # Germanium oxides / germanium dioxide
+          - "284969"   # Germanium and articles thereof
+          - "284910"   # Fluorides of ammonium or sodium (HF used in chip fab)
+          - "811292"   # Unwrought indium (transparent displays, semiconductors)
+          - "811299"   # Indium articles (ITO for displays)
+          - "284490"   # Radioactive isotopes (calibration, medical)
+          - "280610"   # Chlorine gas (semiconductor cleaning)
+          - "284630"   # Europium (phosphors for displays/LEDs)
+        note: "Key materials for semiconductor fabrication not covered by CRM list"
+
+  important:
+    score_range: [0.45, 0.7]
+    description: "Food staples, finished pharmaceuticals, industrial chemicals"
+    sectors:
+      - name: food_staples
+        source: "sector_categorization"
+        label: "Food"
+        hs2_include:
+          ["01","02","03","04","05","06","07","08","09","10","11","12","13","14","15","16","17","18","19","20","21","22","23","24"]
+        note: "HS 01–24 = live animals through tobacco products. Full food and agriculture section"
+
+      - name: finished_pharma
+        source: "sector_categorization"
+        label: "Pharma"
+        hs2_include: ["30"]
+        note: "HS30 = pharmaceutical products (capsules, tablets, vaccines). Less critical than APIs since substitutes often exist"
+
+      - name: industrial_chemicals
+        source: "sector_categorization"
+        label: "Chemicals"
+        hs2_include: ["28"]
+        note: "HS28 = inorganic chemicals. Excludes products already classified as CRM in critical tier"
+
+  standard:
+    score_range: [0.1, 0.3]
+    description: "Consumer goods, manufactured articles, textiles, machinery, and all other products"
+    sectors:
+      - name: everything_else
+        source: "residual"
+        note: "All HS6 products not classified in critical or important tiers"
