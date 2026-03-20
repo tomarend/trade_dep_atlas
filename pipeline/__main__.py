@@ -10,7 +10,12 @@ import yaml
 from loguru import logger
 
 from pipeline.concordance import load_concordance, validate_concordance
+from pipeline.composite import run_composite_scoring
 from pipeline.download import download_baci
+from pipeline.essentiality import run_essentiality_scoring
+from pipeline.export import run_duckdb_export
+from pipeline.georisk import run_georisk_scoring
+from pipeline.hhi import run_hhi_scoring
 from pipeline.ingest import run_ingestion
 
 
@@ -29,7 +34,7 @@ def write_manifest(output_dir: Path, report: dict) -> Path:
 
     manifest = {
         "run_timestamp": datetime.now(timezone.utc).isoformat(),
-        "pipeline_version": "0.1.0",
+        "pipeline_version": "0.2.0",
         "years_processed": report.get("years_processed", []),
         "years_skipped": report.get("years_skipped", []),
         "years_failed": report.get("years_failed", []),
@@ -37,6 +42,7 @@ def write_manifest(output_dir: Path, report: dict) -> Path:
         "duration_seconds": report.get("duration_seconds", 0),
         "baci_download": report.get("baci_download", {}),
         "concordance_warnings": report.get("concordance_warnings", []),
+        "scoring": report.get("scoring", {}),
     }
 
     with open(manifest_path, "w") as f:
@@ -45,7 +51,7 @@ def write_manifest(output_dir: Path, report: dict) -> Path:
     return manifest_path
 
 
-def main(config_path: Path | None = None, skip_download: bool = False) -> None:
+def main(config_path: Path | None = None, skip_download: bool = False, skip_scoring: bool = False) -> None:
     """Full pipeline orchestration: download → validate → ingest → manifest."""
     start_time = time.time()
 
@@ -70,6 +76,7 @@ def main(config_path: Path | None = None, skip_download: bool = False) -> None:
         "duration_seconds": 0,
         "baci_download": {},
         "concordance_warnings": [],
+        "scoring": {},
     }
 
     # Stage 1: Download
@@ -108,7 +115,42 @@ def main(config_path: Path | None = None, skip_download: bool = False) -> None:
         f"{ingestion_result['total_rows']:,} total rows"
     )
 
-    # Stage 4: Write manifest
+    # Scoring stages (optional)
+    if skip_scoring:
+        logger.info("Stages 4-7: Skipping scoring (--skip-scoring)")
+    else:
+        scoring_summary: dict = {}
+
+        # Stage 4: HHI scoring
+        logger.info("Stage 4: Computing HHI concentration scores...")
+        hhi_result = run_hhi_scoring(config)
+        scoring_summary["hhi"] = hhi_result
+        logger.info(f"HHI: {len(hhi_result['years_processed'])} years, {hhi_result['rows_written']:,} rows")
+
+        # Stage 5: Geo-risk scoring
+        logger.info("Stage 5: Computing geopolitical risk scores...")
+        georisk_result = run_georisk_scoring(config)
+        scoring_summary["georisk"] = georisk_result
+
+        # Stage 6: Essentiality scoring
+        logger.info("Stage 6: Computing product essentiality scores...")
+        ess_result = run_essentiality_scoring(config)
+        scoring_summary["essentiality"] = ess_result
+
+        # Stage 7: Composite + DuckDB export
+        logger.info("Stage 7a: Computing composite dependency scores...")
+        composite_result = run_composite_scoring(config)
+        scoring_summary["composite"] = composite_result
+        logger.info(f"Composite: {len(composite_result['years_processed'])} years, {composite_result['rows_written']:,} rows")
+
+        logger.info("Stage 7b: Exporting to DuckDB...")
+        export_result = run_duckdb_export(config)
+        scoring_summary["duckdb"] = export_result
+        logger.info(f"DuckDB: written to {export_result['duckdb_path']}")
+
+        combined_report["scoring"] = scoring_summary
+
+    # Stage 8: Write manifest
     duration = round(time.time() - start_time, 2)
     combined_report["duration_seconds"] = duration
     manifest_path = write_manifest(processed_dir, combined_report)
@@ -121,5 +163,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="BACI Trade Data Pipeline")
     parser.add_argument("--config", type=Path, default=Path("pipeline.yaml"), help="Path to pipeline config YAML")
     parser.add_argument("--skip-download", action="store_true", help="Skip BACI data download stage")
+    parser.add_argument("--skip-scoring", action="store_true",
+                        help="Skip scoring stages 4-7 (run ingestion only)")
     args = parser.parse_args()
-    main(config_path=args.config, skip_download=args.skip_download)
+    main(config_path=args.config, skip_download=args.skip_download, skip_scoring=args.skip_scoring)

@@ -72,7 +72,7 @@ class TestFullPipeline:
     def test_full_pipeline_synthetic(self, tmp_path: Path):
         config_path = _setup_integration(tmp_path)
 
-        main(config_path=config_path, skip_download=True)
+        main(config_path=config_path, skip_download=True, skip_scoring=True)
 
         processed_dir = tmp_path / "data" / "processed"
 
@@ -99,7 +99,7 @@ class TestFullPipeline:
         config_path = _setup_integration(tmp_path)
 
         # First run processes data
-        main(config_path=config_path, skip_download=True)
+        main(config_path=config_path, skip_download=True, skip_scoring=True)
         processed_dir = tmp_path / "data" / "processed"
         manifest_path = processed_dir / "pipeline_manifest.json"
         with open(manifest_path) as f:
@@ -107,7 +107,7 @@ class TestFullPipeline:
         assert len(manifest1["years_processed"]) > 0
 
         # Second run skips everything
-        main(config_path=config_path, skip_download=True)
+        main(config_path=config_path, skip_download=True, skip_scoring=True)
         with open(manifest_path) as f:
             manifest2 = json.load(f)
         assert len(manifest2["years_processed"]) == 0

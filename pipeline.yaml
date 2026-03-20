@@ -15,3 +15,10 @@ output:
   format: "parquet"
   partition_by: "year"
   compression: "zstd"
+scoring:
+  output_dir: "data/scoring"
+  duckdb_path: "data/dashboard.duckdb"
+  weights:
+    hhi: 0.35
+    geo_risk: 0.35
+    essentiality: 0.30
