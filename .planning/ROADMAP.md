@@ -16,6 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Scoring Pipeline & Storage** - Compute HHI, geopolitical risk, essentiality, and composite scores; store in DuckDB
 - [ ] **Phase 3: Dashboard Shell & Data Access** - Multi-page Dash app with routing, methodology page, data access layer, loading states
 - [ ] **Phase 4: Country→Products View** - Primary analytical view with ranked tables, maps, charts, score decomposition, weight controls
+- [ ] **Phase 4.1: Data Quality Fixes** - INSERTED — Fix product descriptions, country regions, and georisk forward-fill
 - [ ] **Phase 5: Product→Countries View & Cross-Linking** - Second analytical entry point with HS hierarchy browsing and bidirectional cross-linking
 - [ ] **Phase 6: Time Series & Advanced Visualizations** - Year slider, trend charts, Sankey flow diagrams, network graph
 
@@ -84,13 +85,27 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Data access layer queries + country page layout with selector, summary cards, weight sliders
-- [ ] 04-02-PLAN.md — AG Grid product table with sorting, filtering, conditional formatting, weight recalculation
-- [ ] 04-03-PLAN.md — Product drill-down panel with supplier table, choropleth map, radar chart, bar chart
+- [x] 04-01-PLAN.md — Data access layer queries + country page layout with selector, summary cards, weight sliders
+- [x] 04-02-PLAN.md — AG Grid product table with sorting, filtering, conditional formatting, weight recalculation
+- [x] 04-03-PLAN.md — Product drill-down panel with supplier table, choropleth map, radar chart, bar chart
+- [x] 04-04-PLAN.md — Gap closure: AG Grid filter + country dropdown fixes
+
+### Phase 4.1: Data Quality Fixes (INSERTED)
+**Goal**: All products have human-readable descriptions, all countries have region/continent assignments, and geo-risk scores cover all BACI years including 2024
+**Depends on**: Phase 4
+**Requirements**: DATA-03, DATA-04, SCOR-02
+**Success Criteria** (what must be TRUE):
+  1. All ~5,000 HS6 products in the dashboard have real descriptions (not empty or "Unknown product")
+  2. All 252 countries have real region and continent assignments (not "Unknown")
+  3. Year 2024 composite scores use forward-filled geo-risk values from 2023 WGI data
+**Plans**: 1 plan
+
+Plans:
+- [ ] 04.1-01-PLAN.md — Fix product descriptions, country regions, georisk forward-fill, rebuild DuckDB
 
 ### Phase 5: Product→Countries View & Cross-Linking
 **Goal**: User can select any HS6 product and see which importing countries are most exposed, with seamless bidirectional navigation between both analytical views
-**Depends on**: Phase 4
+**Depends on**: Phase 4.1
 **Requirements**: PRDV-01, PRDV-02, PRDV-03, PRDV-04, PRDV-05, PRDV-06, CNTV-07
 **Success Criteria** (what must be TRUE):
   1. User can browse and select an HS6 product via hierarchical selector (HS2→HS4→HS6) and see a ranked, sortable table of importers by dependency score with summary statistics
@@ -122,14 +137,15 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Pipeline & Ingestion | 0/3 | Planned | - |
 | 2. Scoring Pipeline & Storage | 0/3 | Not started | - |
 | 3. Dashboard Shell & Data Access | 0/3 | Not started | - |
-| 4. Country→Products View | 0/3 | Planned | - |
+| 4. Country→Products View | 4/4 | Complete | - |
+| 4.1 Data Quality Fixes | 0/1 | Planned | - |
 | 5. Product→Countries View & Cross-Linking | 0/3 | Not started | - |
 | 6. Time Series & Advanced Visualizations | 0/3 | Not started | - |
 
