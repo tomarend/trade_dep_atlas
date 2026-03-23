@@ -14,232 +14,326 @@ dash.register_page(
 )
 
 # ---------------------------------------------------------------------------
-# Tab content builders
+# Shared helpers
 # ---------------------------------------------------------------------------
 
+def _section_label(text: str) -> html.P:
+    """Small uppercase section label — FORMULA, INTERPRETATION, etc."""
+    return html.P(text, className="method-label")
+
+
+def _formula_box(markdown_text: str) -> html.Div:
+    """Styled formula block with light background."""
+    return html.Div(
+        dcc.Markdown(markdown_text, mathjax=True),
+        className="formula-box",
+    )
+
+
+def _section(label: str, *children) -> html.Div:
+    """Labelled section block with consistent spacing."""
+    return html.Div(
+        [_section_label(label), *children],
+        className="method-section",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tab: HHI Concentration
+# ---------------------------------------------------------------------------
 
 def _tab_hhi() -> dbc.Card:
     return dbc.Card(
-        dbc.CardBody(
-            [
-                html.H5("Herfindahl–Hirschman Index (HHI)"),
-                dcc.Markdown(
-                    r"""
-### Formula
+        dbc.CardBody([
+            html.P(
+                """The Herfindahl–Hirschman Index measures how concentrated a country's imports
+                of a given product are across its supplier countries. A score of 1 means total
+                dependence on a single supplier; a score near 0 means supply is spread across
+                many roughly equal partners.""",
+                className="method-intro",
+            ),
 
-$$HHI = \sum_{i=1}^{n} s_i^2$$
+            _section(
+                "FORMULA",
+                _formula_box(
+                    r"""$$HHI = \sum_{i=1}^{n} s_i^2$$
 
-where $s_i$ is supplier $i$'s share of import value for the product-importer pair
-(expressed as a fraction 0–1, so the raw HHI range is already 0–1).
-""",
-                    mathjax=True,
+Where $s_i$ is supplier $i$'s share of total import value for the product–importer
+pair, expressed as a fraction between 0 and 1."""
                 ),
-                html.H6("Interpretation", className="mt-3"),
-                html.Ul(
-                    [
-                        html.Li("HHI = 1.0 — complete monopoly (single supplier)"),
-                        html.Li("HHI ≈ 0 — many equally-sized suppliers"),
-                        html.Li("Scores are normalised to 0–1 before composite computation"),
-                    ]
+            ),
+
+            _section(
+                "INTERPRETATION",
+                dbc.Row([
+                    dbc.Col([
+                        html.Div([
+                            html.Span("HHI = 1.0", className="interp-value"),
+                            html.Span("Complete monopoly — single supplier", className="interp-desc"),
+                        ], className="interp-row"),
+                        html.Div([
+                            html.Span("HHI > 0.25", className="interp-value"),
+                            html.Span("Highly concentrated supply", className="interp-desc"),
+                        ], className="interp-row"),
+                        html.Div([
+                            html.Span("HHI 0.15–0.25", className="interp-value"),
+                            html.Span("Moderately concentrated", className="interp-desc"),
+                        ], className="interp-row"),
+                        html.Div([
+                            html.Span("HHI < 0.15", className="interp-value"),
+                            html.Span("Unconcentrated — many suppliers", className="interp-desc"),
+                        ], className="interp-row"),
+                    ], md=8),
+                ]),
+            ),
+
+            _section(
+                "WHY HHI?",
+                html.P(
+                    """HHI's quadratic weighting makes it sensitive to dominant suppliers —
+                    a single 80% supplier raises HHI far more than eight suppliers each at 10%.
+                    This captures tail risk better than a simple supplier count.
+                    HHI is also the standard measure used in US DOJ and EU DG COMP competition
+                    analysis, making results directly comparable to published work.""",
+                    className="method-text",
                 ),
-                html.H6("Why HHI instead of alternatives?", className="mt-3"),
-                dcc.Markdown(
-                    """
-HHI's quadratic weighting means it is **sensitive to the largest suppliers** — a single supplier
-with 80% share raises HHI far more than eight suppliers each with 10%.
-This captures tail risk better than a simple supplier count (which treats all suppliers equally)
-or a diversity index (which downweights dominant suppliers).
-HHI is also widely used in competition policy work (US DOJ, EU DG COMP), giving results
-that are directly comparable to published concentration analyses.
-"""
-                ),
-            ]
-        ),
-        className="mt-3",
+            ),
+        ]),
+        className="method-card",
     )
 
+
+# ---------------------------------------------------------------------------
+# Tab: Geopolitical Risk
+# ---------------------------------------------------------------------------
 
 def _tab_georisk() -> dbc.Card:
-    wgi_dimensions = [
-        "Voice & Accountability",
-        "Political Stability & Absence of Violence",
-        "Government Effectiveness",
-        "Regulatory Quality",
-        "Rule of Law",
-        "Control of Corruption",
+    wgi_dims = [
+        ("Voice & Accountability", "extent of political participation and free expression"),
+        ("Political Stability", "likelihood of political instability or politically-motivated violence"),
+        ("Government Effectiveness", "quality of public services and civil service"),
+        ("Regulatory Quality", "ability to formulate sound policies enabling private development"),
+        ("Rule of Law", "confidence in contract enforcement, property rights, courts"),
+        ("Control of Corruption", "extent of public power exercised for private gain"),
     ]
+
     return dbc.Card(
-        dbc.CardBody(
-            [
-                html.H5("Geopolitical Risk"),
-                html.H6("WGI 6 Governance Dimensions", className="mt-3"),
-                dbc.ListGroup(
-                    [dbc.ListGroupItem(d) for d in wgi_dimensions],
-                    flush=True,
-                    className="mb-3",
-                ),
-                html.H6("Coverage Gaps"),
-                dcc.Markdown(
-                    """
-For territories without WGI coverage, **Freedom House** scores are used as a fallback.
-This affects primarily: Taiwan, Kosovo, and Palestine.
-"""
-                ),
-                html.H6("Sanctions Multiplier", className="mt-3"),
-                dcc.Markdown(
-                    r"""
-Sourced from the **Global Sanctions Database (GSDB)** (Drexel University / Stanford).
+        dbc.CardBody([
+            html.P(
+                """Geopolitical risk for each supplier country is built
+                from two inputs: governance quality (World Bank WGI) and
+                sanctions exposure (GSDB). Higher scores mean greater risk.""",
+                className="method-intro",
+            ),
 
-$$geo\_risk = governance\_risk \times (1 + sanctions\_intensity)$$
+            _section(
+                "COMPOSITE FORMULA",
+                _formula_box(
+                    r"""$$\text{geo\_risk} = \text{governance\_risk} \times (1 + \text{sanctions\_intensity})$$
 
-- **governance_risk** — normalised 0–1 (higher = worse governance), derived from WGI/Freedom House
-- **sanctions_intensity** — total sanction events normalised 0–1 (GSDB bilateral sanctions)
-""",
-                    mathjax=True,
+- **governance_risk** — normalised 0–1 (higher = worse governance), from WGI / Freedom House
+- **sanctions_intensity** — bilateral sanction events normalised 0–1 (GSDB)"""
                 ),
-            ]
-        ),
-        className="mt-3",
+            ),
+
+            _section(
+                "WGI GOVERNANCE DIMENSIONS",
+                html.P(
+                    "Six dimensions are averaged and inverted so that higher values indicate worse governance:",
+                    className="method-text",
+                ),
+                html.Div([
+                    html.Div([
+                        html.Span(f"{i+1}.", className="wgi-num"),
+                        html.Div([
+                            html.Span(name, className="wgi-name"),
+                            html.Span(desc, className="wgi-desc"),
+                        ], className="wgi-text"),
+                    ], className="wgi-row")
+                    for i, (name, desc) in enumerate(wgi_dims)
+                ], className="wgi-list"),
+            ),
+
+            _section(
+                "COVERAGE GAPS",
+                html.P(
+                    """WGI excludes some territories. For Taiwan, Kosovo, and Palestine,
+                    Freedom House Freedom in the World scores are used as a fallback,
+                    rescaled to the WGI range.""",
+                    className="method-text",
+                ),
+            ),
+
+            _section(
+                "SANCTIONS DATA",
+                html.P(
+                    """Sanctions intensity is sourced from the Global Sanctions Database (GSDB),
+                    maintained by Drexel University and Stanford. It captures bilateral sanction
+                    episodes between 1950 and the present, normalised to a 0–1 intensity score
+                    per country pair.""",
+                    className="method-text",
+                ),
+            ),
+        ]),
+        className="method-card",
     )
 
+
+# ---------------------------------------------------------------------------
+# Tab: Essentiality
+# ---------------------------------------------------------------------------
 
 def _tab_essentiality() -> dbc.Card:
     tiers = [
         {
-            "Tier": "Critical",
-            "Score Range": "0.85–1.0",
-            "Examples": "Critical raw materials (EU CRM 2023), USGS critical minerals",
+            "tier": "Critical",
+            "range": "0.85 – 1.0",
+            "color": "danger",
+            "examples": "EU Critical Raw Materials (CRM 2023), USGS Critical Minerals",
         },
         {
-            "Tier": "Important",
-            "Score Range": "0.45–0.7",
-            "Examples": "Energy products, pharma, food staples, semiconductors",
+            "tier": "Important",
+            "range": "0.45 – 0.70",
+            "color": "warning",
+            "examples": "Energy products, pharmaceuticals, food staples, semiconductors",
         },
         {
-            "Tier": "Standard",
-            "Score Range": "0.1–0.3",
-            "Examples": "General industrial inputs",
+            "tier": "Standard",
+            "range": "0.10 – 0.30",
+            "color": "secondary",
+            "examples": "General industrial inputs not on critical lists",
         },
     ]
-    rows = [
-        html.Tr([html.Td(t["Tier"]), html.Td(t["Score Range"]), html.Td(t["Examples"])])
-        for t in tiers
-    ]
-    return dbc.Card(
-        dbc.CardBody(
-            [
-                html.H5("Essentiality"),
-                dbc.Table(
-                    [
-                        html.Thead(
-                            html.Tr([html.Th("Tier"), html.Th("Score Range"), html.Th("Examples")])
-                        ),
-                        html.Tbody(rows),
-                    ],
-                    striped=True,
-                    bordered=True,
-                    hover=True,
-                    responsive=True,
-                    className="mt-3",
-                ),
-                html.H6("Within-tier gradient", className="mt-3"),
-                dcc.Markdown(
-                    """
-A product's exact score **within its tier** is modulated by its global export HHI.
-A critical material with highly concentrated global supply (few producing countries)
-scores at the **top** of the Critical range.
-"""
-                ),
-                html.H6("Data sources"),
-                dbc.ListGroup(
-                    [
-                        dbc.ListGroupItem("EU Critical Raw Materials list (CRM 2023) — European Commission"),
-                        dbc.ListGroupItem("USGS Critical Minerals List (2022) — US Geological Survey"),
-                    ],
-                    flush=True,
-                ),
-            ]
-        ),
-        className="mt-3",
+
+    tier_cards = dbc.Row(
+        [
+            dbc.Col(
+                html.Div([
+                    html.Div([
+                        html.Span(t["tier"], className=f"tier-name tier-{t['color']}"),
+                        html.Span(t["range"], className="tier-range"),
+                    ], className="tier-header"),
+                    html.P(t["examples"], className="tier-examples"),
+                ], className="tier-card"),
+                md=4,
+            )
+            for t in tiers
+        ],
+        className="g-3 mb-2",
     )
 
+    return dbc.Card(
+        dbc.CardBody([
+            html.P(
+                """Essentiality captures how critical a product is to an economy
+                independent of where it comes from. Products are assigned to tiers
+                based on their appearance on critical materials lists.""",
+                className="method-intro",
+            ),
+
+            _section("TIER DEFINITIONS", tier_cards),
+
+            _section(
+                "WITHIN-TIER GRADIENT",
+                html.P(
+                    """A product's exact score within its tier is modulated by its
+                    global export HHI — i.e., how concentrated global production is,
+                    regardless of the analysed country's specific suppliers.
+                    A critical material with highly concentrated global supply
+                    (few producing nations) scores at the top of the Critical range.""",
+                    className="method-text",
+                ),
+            ),
+
+            _section(
+                "DATA SOURCES",
+                html.Div([
+                    html.Div([
+                        html.Span("EU Critical Raw Materials List (CRM 2023)", className="src-name"),
+                        html.Span("European Commission", className="src-provider"),
+                    ], className="src-row"),
+                    html.Div([
+                        html.Span("USGS Critical Minerals List (2022)", className="src-name"),
+                        html.Span("US Geological Survey", className="src-provider"),
+                    ], className="src-row"),
+                ], className="src-list"),
+            ),
+        ]),
+        className="method-card",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tab: Data Sources
+# ---------------------------------------------------------------------------
 
 def _tab_sources() -> dbc.Card:
     min_yr, max_yr = data.get_year_range()
     sources = [
         {
-            "Dataset": "BACI bilateral trade",
-            "Provider": "CEPII",
-            "Coverage": "~200 countries, ~5,000 HS6 products",
-            "Notes": "Reconciled from UN COMTRADE",
+            "dataset": "BACI Bilateral Trade",
+            "provider": "CEPII",
+            "coverage": f"{min_yr}–{max_yr}",
+            "detail": "~200 countries, ~5,000 HS6 products. Reconciled mirror flows from UN COMTRADE.",
         },
         {
-            "Dataset": "Worldwide Governance Indicators (WGI)",
-            "Provider": "World Bank",
-            "Coverage": "~210 countries, 1996–present",
-            "Notes": "6 governance dimensions",
+            "dataset": "Worldwide Governance Indicators (WGI)",
+            "provider": "World Bank",
+            "coverage": "1996–present",
+            "detail": "6 governance dimensions across ~210 countries.",
         },
         {
-            "Dataset": "Freedom House Freedom in the World",
-            "Provider": "Freedom House",
-            "Coverage": "~210 territories",
-            "Notes": "Used where WGI has gaps",
+            "dataset": "Freedom in the World",
+            "provider": "Freedom House",
+            "coverage": "Annual",
+            "detail": "Political rights & civil liberties. Used as WGI fallback for Taiwan, Kosovo, Palestine.",
         },
         {
-            "Dataset": "Global Sanctions Database (GSDB)",
-            "Provider": "Drexel/Stanford",
-            "Coverage": "sanctions since 1950",
-            "Notes": "Bilateral sanctions intensity",
+            "dataset": "Global Sanctions Database (GSDB)",
+            "provider": "Drexel / Stanford",
+            "coverage": "1950–present",
+            "detail": "Bilateral sanctions episodes. Normalised to per-country intensity scores.",
         },
         {
-            "Dataset": "EU Critical Raw Materials List",
-            "Provider": "European Commission",
-            "Coverage": "~34 materials (CRM 2023)",
-            "Notes": "Mapped to HS6 codes",
+            "dataset": "EU Critical Raw Materials List",
+            "provider": "European Commission",
+            "coverage": "CRM 2023",
+            "detail": "34 critical raw materials mapped to HS6 codes.",
         },
         {
-            "Dataset": "USGS Critical Minerals list",
-            "Provider": "US Geological Survey",
-            "Coverage": "~50 minerals (2022)",
-            "Notes": "Mapped to HS6 codes",
+            "dataset": "USGS Critical Minerals",
+            "provider": "US Geological Survey",
+            "coverage": "2022 list",
+            "detail": "~50 minerals mapped to HS6 codes.",
         },
     ]
-    rows = [
-        html.Tr(
-            [html.Td(s["Dataset"]), html.Td(s["Provider"]), html.Td(s["Coverage"]), html.Td(s["Notes"])]
-        )
-        for s in sources
-    ]
+
     return dbc.Card(
-        dbc.CardBody(
-            [
-                html.H5("Data Sources"),
-                dcc.Markdown(
-                    f"Trade data spans **{min_yr}–{max_yr}** (latest year: {max_yr})."
-                ),
-                dbc.Table(
-                    [
-                        html.Thead(
-                            html.Tr(
-                                [
-                                    html.Th("Dataset"),
-                                    html.Th("Provider"),
-                                    html.Th("Coverage"),
-                                    html.Th("Notes"),
-                                ]
-                            )
-                        ),
-                        html.Tbody(rows),
-                    ],
-                    striped=True,
-                    bordered=True,
-                    hover=True,
-                    responsive=True,
-                    className="mt-3",
-                ),
-            ]
-        ),
-        className="mt-3",
+        dbc.CardBody([
+            html.P(
+                f"All datasets are integrated and harmonised at the HS6 product level. "
+                f"Trade data spans {min_yr}–{max_yr}.",
+                className="method-intro",
+            ),
+
+            _section(
+                "SOURCE DATASETS",
+                html.Div([
+                    html.Div([
+                        html.Div([
+                            html.Span(s["dataset"], className="src-name"),
+                            html.Span(s["coverage"], className="src-coverage"),
+                        ], className="src-header"),
+                        html.Div([
+                            html.Span(s["provider"], className="src-provider"),
+                            html.Span(s["detail"], className="src-detail"),
+                        ], className="src-body"),
+                    ], className="source-item")
+                    for s in sources
+                ], className="source-list"),
+            ),
+        ]),
+        className="method-card",
     )
 
 
@@ -250,10 +344,13 @@ def _tab_sources() -> dbc.Card:
 layout = dbc.Container(
     [
         html.Div([
-        html.H3("Methodology"),
-        html.P("Scoring methodology and data sources for the supply-risk index.",
-               className="page-subtitle"),
-    ], className="page-header"),
+            html.H3("Methodology"),
+            html.P(
+                "How supply-chain risk is measured — formulas, data sources, and design rationale.",
+                className="page-subtitle",
+            ),
+        ], className="page-header"),
+
         dbc.Tabs(
             [
                 dbc.Tab(_tab_hhi(), label="HHI Concentration", tab_id="tab-hhi"),

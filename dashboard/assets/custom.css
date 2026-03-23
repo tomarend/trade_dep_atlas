@@ -114,7 +114,178 @@ body { background-color: #f0f4f8; }
 .stat-chip .chip-value { color: #1e293b; font-weight: 600; }
 
 /* About page */
-.about-content { max-width: 820px; }
+.about-content { max-width: 860px; }
+
+/* ---- Methodology tab cards ---- */
+
+.method-card .card-body { padding: 1.75rem 2rem; }
+
+.method-intro {
+    font-size: 0.9rem;
+    color: #475569;
+    line-height: 1.65;
+    margin-bottom: 0;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Section blocks inside method cards */
+.method-section {
+    padding: 1.25rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.method-section:last-child { border-bottom: none; padding-bottom: 0; }
+
+/* Small uppercase section label */
+.method-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.1px;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+}
+
+/* Formula box */
+.formula-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 3px solid #3b82f6;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    font-size: 0.875rem;
+    color: #334155;
+    line-height: 1.7;
+}
+.formula-box p { margin-bottom: 0.4rem; }
+.formula-box p:last-child { margin-bottom: 0; }
+.formula-box ul { margin: 0.5rem 0 0; padding-left: 1.25rem; }
+.formula-box li { margin-bottom: 0.2rem; }
+
+/* Body text */
+.method-text {
+    font-size: 0.875rem;
+    color: #475569;
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* Interpretation rows — HHI tab */
+.interp-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.interp-row:last-child { border-bottom: none; }
+.interp-value {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #1e293b;
+    min-width: 120px;
+    font-family: "SFMono-Regular", Consolas, monospace;
+}
+.interp-desc {
+    font-size: 0.845rem;
+    color: #64748b;
+}
+
+/* WGI dimension list — geo risk tab */
+.wgi-list { margin-top: 0.5rem; }
+.wgi-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid #f8fafc;
+}
+.wgi-row:last-child { border-bottom: none; }
+.wgi-num {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #3b82f6;
+    min-width: 18px;
+    padding-top: 1px;
+}
+.wgi-text { display: flex; flex-direction: column; gap: 1px; }
+.wgi-name { font-size: 0.845rem; font-weight: 600; color: #1e293b; }
+.wgi-desc { font-size: 0.78rem; color: #94a3b8; }
+
+/* Tier cards — essentiality tab */
+.tier-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 1.1rem 1.25rem;
+    height: 100%;
+}
+.tier-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+.tier-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+}
+.tier-danger { background: #fef2f2; color: #dc2626; }
+.tier-warning { background: #fffbeb; color: #d97706; }
+.tier-secondary { background: #f1f5f9; color: #475569; }
+.tier-range {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #64748b;
+    font-family: "SFMono-Regular", Consolas, monospace;
+}
+.tier-examples {
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Source rows — shared between essentiality + data sources */
+.src-list { margin-top: 0.25rem; }
+.src-row {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f8fafc;
+}
+.src-row:last-child { border-bottom: none; }
+.src-name { font-size: 0.845rem; font-weight: 600; color: #1e293b; flex: 1; }
+.src-provider { font-size: 0.78rem; color: #94a3b8; white-space: nowrap; }
+
+/* Source items — data sources tab */
+.source-list { display: flex; flex-direction: column; gap: 0; }
+.source-item {
+    padding: 0.9rem 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+.source-item:last-child { border-bottom: none; }
+.src-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+.src-coverage {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    white-space: nowrap;
+}
+.src-body { display: flex; align-items: baseline; gap: 0.75rem; }
+.src-detail { font-size: 0.8rem; color: #94a3b8; flex: 1; }
 
 /* Footer */
 .footer-text {
