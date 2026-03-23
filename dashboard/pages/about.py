@@ -129,10 +129,9 @@ def _tab_georisk() -> dbc.Card:
             _section(
                 "COMPOSITE FORMULA",
                 _formula_box(
-                    r"""$$\text{geo\_risk} = \text{governance\_risk} \times (1 + \text{sanctions\_intensity})$$
+                    r"""$$R_{\text{geo}} = R_{\text{gov}} \times \bigl(1 + S_{\text{sanc}}\bigr)$$
 
-- **governance_risk** — normalised 0–1 (higher = worse governance), from WGI / Freedom House
-- **sanctions_intensity** — bilateral sanction events normalised 0–1 (GSDB)"""
+Where $R_{\text{gov}}$ is governance risk (0–1, higher = worse), derived from WGI / Freedom House; $S_{\text{sanc}}$ is bilateral sanctions intensity (0–1, GSDB)"""
                 ),
             ),
 
