@@ -1,69 +1,364 @@
-# Manual overrides for territories and entities not in pycountry or with non-standard mappings.
-# Format: baci_code → override fields. These take precedence over pycountry lookups.
 overrides:
-  # Non-standard territories
-  158:  # Taiwan
-    iso3: "TWN"
-    name: "Taiwan"
-    region: "Eastern Asia"
-    continent: "Asia"
-  983:  # Kosovo (BACI uses various codes)
-    iso3: "XKX"
-    name: "Kosovo"
-    region: "Southern Europe"
-    continent: "Europe"
-  275:  # Palestine
-    iso3: "PSE"
-    name: "Palestine"
-    region: "Western Asia"
-    continent: "Asia"
-  532:  # Netherlands Antilles (dissolved 2010)
-    iso3: "ANT"
-    name: "Netherlands Antilles"
-    region: "Caribbean"
-    continent: "Americas"
-  736:  # Sudan (before South Sudan split)
-    iso3: "SDN"
-    name: "Sudan"
-    region: "Northern Africa"
-    continent: "Africa"
-
-# Historical entities → successor states (for splitting trade flows in older years)
+  158:
+    iso3: TWN
+    name: Taiwan
+    region: Eastern Asia
+    continent: Asia
+  983:
+    iso3: XKX
+    name: Kosovo
+    region: Southern Europe
+    continent: Europe
+  275:
+    iso3: PSE
+    name: Palestine
+    region: Western Asia
+    continent: Asia
+  532:
+    iso3: ANT
+    name: Netherlands Antilles
+    region: Caribbean
+    continent: Americas
+  736:
+    iso3: SDN
+    name: Sudan
+    region: Northern Africa
+    continent: Africa
+  278:
+    iso3: DDR
+    name: East Germany
+    region: Eastern Europe
+    continent: Europe
+  849:
+    iso3: PUS
+    name: US Misc. Pacific Islands
+    region: Oceania
+    continent: Oceania
+  697:
+    iso3: R20
+    name: Europe EFTA, nes
+    region: Western Europe
+    continent: Europe
+  490:
+    iso3: S19
+    name: Other Asia, nes
+    region: Southern Asia
+    continent: Asia
+  891:
+    iso3: SCG
+    name: Serbia and Montenegro
+    region: Southern Europe
+    continent: Europe
+  711:
+    iso3: ZA1
+    name: Southern African Customs Union
+    region: Southern Africa
+    continent: Africa
+  200:
+    iso3: CSK
+    name: Czechoslovakia
+    region: Eastern Europe
+    continent: Europe
+  810:
+    iso3: SUN
+    name: USSR
+    region: Eastern Europe
+    continent: Europe
 historical:
-  200:  # Czechoslovakia (dissolved 1993)
-    successors: ["CZE", "SVK"]
+  200:
+    successors:
+    - CZE
+    - SVK
     dissolved_year: 1993
-  891:  # Yugoslavia/Serbia-Montenegro
-    successors: ["SRB", "MNE"]
+  891:
+    successors:
+    - SRB
+    - MNE
     dissolved_year: 2006
-  810:  # USSR
-    successors: ["RUS", "UKR", "BLR", "KAZ", "UZB", "GEO", "AZE", "LTU", "LVA", "EST", "TJK", "KGZ", "TKM", "MDA", "ARM"]
+  810:
+    successors:
+    - RUS
+    - UKR
+    - BLR
+    - KAZ
+    - UZB
+    - GEO
+    - AZE
+    - LTU
+    - LVA
+    - EST
+    - TJK
+    - KGZ
+    - TKM
+    - MDA
+    - ARM
     dissolved_year: 1991
-  890:  # Yugoslavia (original)
-    successors: ["SVN", "HRV", "BIH", "SRB", "MNE", "MKD", "XKX"]
+  890:
+    successors:
+    - SVN
+    - HRV
+    - BIH
+    - SRB
+    - MNE
+    - MKD
+    - XKX
     dissolved_year: 1992
-
-# Re-export hub flags
-reexport_hubs: ["NLD", "SGP", "HKG", "ARE", "BEL"]
-
-# Region/continent assignments (supplement for codes pycountry doesn't classify)
+reexport_hubs:
+- NLD
+- SGP
+- HKG
+- ARE
+- BEL
 region_map:
-  Eastern Asia: ["CHN", "JPN", "KOR", "PRK", "MNG", "TWN", "HKG", "MAC"]
-  South-Eastern Asia: ["SGP", "THA", "VNM", "MYS", "IDN", "PHL", "MMR", "KHM", "LAO", "BRN"]
-  Northern America: ["USA", "CAN", "MEX"]
-  Western Europe: ["DEU", "FRA", "GBR", "NLD", "BEL", "CHE", "AUT", "LUX", "IRL"]
-  Southern Europe: ["ITA", "ESP", "PRT", "GRC", "HRV", "SVN", "XKX", "ALB", "MKD", "MNE", "SRB", "BIH"]
-  Northern Europe: ["SWE", "NOR", "FIN", "DNK", "ISL", "LTU", "LVA", "EST"]
-  Eastern Europe: ["POL", "CZE", "SVK", "HUN", "ROU", "BGR", "UKR", "BLR", "MDA", "RUS"]
-  South America: ["BRA", "ARG", "CHL", "COL", "PER", "VEN", "ECU", "BOL", "PRY", "URY", "GUY", "SUR"]
-  Central America: ["GTM", "HND", "SLV", "NIC", "CRI", "PAN", "BLZ"]
-  Caribbean: ["CUB", "JAM", "HTI", "DOM", "TTO", "BHS", "BRB", "ANT"]
-  Western Asia: ["ARE", "SAU", "ISR", "TUR", "IRQ", "IRN", "QAT", "KWT", "OMN", "BHR", "JOR", "LBN", "SYR", "YEM", "PSE"]
-  Southern Asia: ["IND", "PAK", "BGD", "LKA", "NPL", "AFG"]
-  Central Asia: ["KAZ", "UZB", "TKM", "TJK", "KGZ"]
-  Northern Africa: ["EGY", "DZA", "MAR", "TUN", "LBY", "SDN"]
-  Western Africa: ["NGA", "GHA", "CIV", "SEN", "MLI", "BFA", "NER", "GIN"]
-  Eastern Africa: ["ETH", "KEN", "TZA", "UGA", "RWA", "MOZ", "MDG", "ZWE"]
-  Southern Africa: ["ZAF", "BWA", "NAM", "ZMB", "MWI"]
-  Central Africa: ["COD", "CMR", "GAB", "COG", "TCD", "CAF"]
-  Oceania: ["AUS", "NZL", "PNG", "FJI"]
+  Eastern Asia:
+  - CHN
+  - JPN
+  - KOR
+  - PRK
+  - MNG
+  - TWN
+  - HKG
+  - MAC
+  South-Eastern Asia:
+  - SGP
+  - THA
+  - VNM
+  - MYS
+  - IDN
+  - PHL
+  - MMR
+  - KHM
+  - LAO
+  - BRN
+  - TLS
+  Southern Asia:
+  - IND
+  - PAK
+  - BGD
+  - LKA
+  - NPL
+  - AFG
+  - BTN
+  - MDV
+  Central Asia:
+  - KAZ
+  - UZB
+  - TKM
+  - TJK
+  - KGZ
+  Western Asia:
+  - ARE
+  - SAU
+  - ISR
+  - TUR
+  - IRQ
+  - IRN
+  - QAT
+  - KWT
+  - OMN
+  - BHR
+  - JOR
+  - LBN
+  - SYR
+  - YEM
+  - PSE
+  - ARM
+  - AZE
+  - GEO
+  - CYP
+  Western Europe:
+  - DEU
+  - FRA
+  - GBR
+  - NLD
+  - BEL
+  - CHE
+  - AUT
+  - LUX
+  - IRL
+  - MCO
+  - LIE
+  Southern Europe:
+  - ITA
+  - ESP
+  - PRT
+  - GRC
+  - HRV
+  - SVN
+  - XKX
+  - ALB
+  - MKD
+  - MNE
+  - SRB
+  - BIH
+  - AND
+  - SMR
+  - MLT
+  - GIB
+  Northern Europe:
+  - SWE
+  - NOR
+  - FIN
+  - DNK
+  - ISL
+  - LTU
+  - LVA
+  - EST
+  - GRL
+  - FRO
+  Eastern Europe:
+  - POL
+  - CZE
+  - SVK
+  - HUN
+  - ROU
+  - BGR
+  - UKR
+  - BLR
+  - MDA
+  - RUS
+  Northern America:
+  - USA
+  - CAN
+  - MEX
+  - BMU
+  - SPM
+  South America:
+  - BRA
+  - ARG
+  - CHL
+  - COL
+  - PER
+  - VEN
+  - ECU
+  - BOL
+  - PRY
+  - URY
+  - GUY
+  - SUR
+  - FLK
+  Central America:
+  - GTM
+  - HND
+  - SLV
+  - NIC
+  - CRI
+  - PAN
+  - BLZ
+  Caribbean:
+  - CUB
+  - JAM
+  - HTI
+  - DOM
+  - TTO
+  - BHS
+  - BRB
+  - ANT
+  - ABW
+  - AIA
+  - ATG
+  - BES
+  - BLM
+  - CUW
+  - CYM
+  - DMA
+  - GRD
+  - KNA
+  - LCA
+  - MSR
+  - PRI
+  - SXM
+  - TCA
+  - VCT
+  - VGB
+  Northern Africa:
+  - EGY
+  - DZA
+  - MAR
+  - TUN
+  - LBY
+  - SDN
+  Western Africa:
+  - NGA
+  - GHA
+  - CIV
+  - SEN
+  - MLI
+  - BFA
+  - NER
+  - GIN
+  - BEN
+  - TGO
+  - SLE
+  - LBR
+  - GMB
+  - GNB
+  - CPV
+  - MRT
+  - SHN
+  Eastern Africa:
+  - ETH
+  - KEN
+  - TZA
+  - UGA
+  - RWA
+  - MOZ
+  - MDG
+  - ZWE
+  - ERI
+  - DJI
+  - SOM
+  - SSD
+  - BDI
+  - COM
+  - MUS
+  - SYC
+  - MYT
+  Southern Africa:
+  - ZAF
+  - BWA
+  - NAM
+  - ZMB
+  - MWI
+  - LSO
+  - SWZ
+  - AGO
+  Central Africa:
+  - COD
+  - CMR
+  - GAB
+  - COG
+  - TCD
+  - CAF
+  - GNQ
+  - STP
+  Oceania:
+  - AUS
+  - NZL
+  - PNG
+  - FJI
+  - SLB
+  - VUT
+  - WSM
+  - TON
+  - KIR
+  - FSM
+  - MHL
+  - PLW
+  - TUV
+  - NRU
+  - COK
+  - NIU
+  - TKL
+  - NCL
+  - PYF
+  - WLF
+  - GUM
+  - ASM
+  - MNP
+  - NFK
+  - CCK
+  - CXR
+  - PCN
+  - ATF
+  - IOT

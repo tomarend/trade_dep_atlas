@@ -165,5 +165,16 @@ if __name__ == "__main__":
     parser.add_argument("--skip-download", action="store_true", help="Skip BACI data download stage")
     parser.add_argument("--skip-scoring", action="store_true",
                         help="Skip scoring stages 4-7 (run ingestion only)")
+    parser.add_argument("--generate-descriptions", action="store_true",
+                        help="Generate comprehensive HS6 product descriptions and exit")
     args = parser.parse_args()
-    main(config_path=args.config, skip_download=args.skip_download, skip_scoring=args.skip_scoring)
+
+    if args.generate_descriptions:
+        from pipeline.generate_descriptions import generate_descriptions
+        config = load_config(args.config)
+        raw_dir = Path(config["baci"]["raw_dir"])
+        reference_dir = Path(config["processing"]["reference_dir"])
+        count = generate_descriptions(raw_dir, reference_dir)
+        logger.info(f"Generated {count} product descriptions")
+    else:
+        main(config_path=args.config, skip_download=args.skip_download, skip_scoring=args.skip_scoring)
