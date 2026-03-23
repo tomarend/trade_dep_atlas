@@ -18,6 +18,8 @@ Reference data files in data/reference/governance/:
     gsdb_sanctions.csv         — columns: sender_iso3, target_iso3, start_year, end_year
 """
 
+import urllib.request
+import json
 from pathlib import Path
 
 import polars as pl
@@ -30,18 +32,69 @@ _WGI_RANGE = _WGI_MAX - _WGI_MIN   # 5.0
 _SANCTIONS_NORMALIZER = 10.0        # 10+ active sanctions → intensity = 1.0
 
 
+def _download_wgi(out_path: Path) -> None:
+    """Fetch WGI data from World Bank API and write to out_path as wgi.csv.
+
+    Uses the World Bank Indicators REST API v2:
+      https://api.worldbank.org/v2/country/all/indicator/{id}?format=json&per_page=20000
+
+    The six WGI indicator codes:
+      PV.EST  — Political Stability
+      GE.EST  — Government Effectiveness
+      RQ.EST  — Regulatory Quality
+      RL.EST  — Rule of Law
+      CC.EST  — Control of Corruption
+      VA.EST  — Voice and Accountability
+    """
+    indicators = {
+        "va": "VA.EST",
+        "ps": "PV.EST",
+        "ge": "GE.EST",
+        "rq": "RQ.EST",
+        "rl": "RL.EST",
+        "cc": "CC.EST",
+    }
+    base = "https://api.worldbank.org/v2/country/all/indicator"
+    records: dict[tuple[str, int], dict] = {}
+
+    for col, indicator_id in indicators.items():
+        url = f"{base}/{indicator_id}?format=json&per_page=20000&mrv=30"
+        logger.info(f"WGI download: fetching {indicator_id} from World Bank API...")
+        with urllib.request.urlopen(url, timeout=60) as resp:
+            payload = json.loads(resp.read().decode())
+
+        if len(payload) < 2:
+            raise RuntimeError(f"Unexpected WGI API response for {indicator_id}: {payload}")
+
+        for entry in payload[1]:
+            iso3 = entry.get("countryiso3code", "")
+            year_str = entry.get("date", "")
+            value = entry.get("value")
+            if not iso3 or len(iso3) != 3 or not year_str.isdigit() or value is None:
+                continue
+            key = (iso3, int(year_str))
+            if key not in records:
+                records[key] = {"iso3": iso3, "year": int(year_str)}
+            records[key][col] = float(value)
+
+    if not records:
+        raise RuntimeError("WGI API returned no usable rows")
+
+    rows = list(records.values())
+    df = pl.DataFrame(rows, infer_schema_length=len(rows)).select(
+        ["iso3", "year"] + _WGI_COLS
+    )
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    df.write_csv(out_path)
+    logger.info(f"WGI download complete: {len(df)} rows written to {out_path}")
+
+
 def load_wgi(governance_dir: Path) -> pl.DataFrame:
-    """Load WGI CSV. Raises FileNotFoundError with setup instructions if missing."""
+    """Load WGI CSV, auto-downloading from World Bank API if not present."""
     wgi_path = governance_dir / "wgi.csv"
     if not wgi_path.exists():
-        raise FileNotFoundError(
-            f"WGI data file not found: {wgi_path}\n"
-            "To obtain it:\n"
-            "  1. Visit https://info.worldbank.org/governance/wgi/\n"
-            "  2. Download the 'Country/Territory' CSV export for all indicators\n"
-            "  3. Reformat to columns: iso3, year, va, ps, ge, rq, rl, cc\n"
-            "  4. Place at data/reference/governance/wgi.csv"
-        )
+        logger.info("wgi.csv not found — auto-downloading from World Bank API...")
+        _download_wgi(wgi_path)
     df = pl.read_csv(wgi_path, null_values=["", "NA", "#N/A"])
     required = {"iso3", "year"} | set(_WGI_COLS)
     missing = required - set(df.columns)
