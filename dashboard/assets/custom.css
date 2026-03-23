@@ -329,5 +329,5 @@ body {
 .score-medium { color: #d97706; }
 .score-low { color: #16a34a; }
 .score-value { font-weight: 700; }
-.drilldown-panel { border-left: 3px solid var(--bs-primary); border-radius: 8px; }
-.drilldown-header { font-weight: 600; margin-bottom: 1rem; }
+.drilldown-panel { padding: 0.5rem 0; }
+.drilldown-header { font-weight: 600; margin-bottom: 1rem; border-left: 3px solid #2563eb; padding-left: 0.75rem; }
