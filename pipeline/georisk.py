@@ -260,6 +260,23 @@ def run_georisk_scoring(config: dict) -> dict:
     logger.info("Geo-risk: combining into geo_risk scores...")
     result = compute_geo_risk(governance_risk_df, sanctions_intensity_df)
 
+    # Forward-fill: extend latest WGI year to cover BACI years beyond WGI
+    processed_dir = Path(config["processing"]["processed_dir"])
+    baci_years = sorted(
+        int(d.name.split("=")[1])
+        for d in processed_dir.glob("year=*")
+        if d.is_dir()
+    )
+    max_georisk_year = result["year"].max()
+    fill_years = [y for y in baci_years if y > max_georisk_year]
+    if fill_years:
+        latest = result.filter(pl.col("year") == max_georisk_year)
+        filled = pl.concat(
+            [latest.with_columns(pl.lit(y).cast(pl.Int64).alias("year")) for y in fill_years]
+        )
+        result = pl.concat([result, filled])
+        logger.info(f"Geo-risk: forward-filled {len(fill_years)} years beyond WGI ({fill_years})")
+
     out_path.parent.mkdir(parents=True, exist_ok=True)
     result.write_parquet(out_path, compression="zstd")
 

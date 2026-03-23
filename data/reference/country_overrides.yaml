@@ -195,6 +195,7 @@ region_map:
   - SMR
   - MLT
   - GIB
+  - VAT
   Northern Europe:
   - SWE
   - NOR
@@ -206,6 +207,11 @@ region_map:
   - EST
   - GRL
   - FRO
+  - GGY
+  - JEY
+  - IMN
+  - SJM
+  - ALA
   Eastern Europe:
   - POL
   - CZE
@@ -237,6 +243,7 @@ region_map:
   - GUY
   - SUR
   - FLK
+  - GUF
   Central America:
   - GTM
   - HND
@@ -271,6 +278,10 @@ region_map:
   - TCA
   - VCT
   - VGB
+  - GLP
+  - MTQ
+  - MAF
+  - VIR
   Northern Africa:
   - EGY
   - DZA
@@ -278,6 +289,7 @@ region_map:
   - TUN
   - LBY
   - SDN
+  - ESH
   Western Africa:
   - NGA
   - GHA
@@ -314,6 +326,7 @@ region_map:
   - MUS
   - SYC
   - MYT
+  - REU
   Southern Africa:
   - ZAF
   - BWA
@@ -362,3 +375,8 @@ region_map:
   - PCN
   - ATF
   - IOT
+  - UMI
+  - ATA
+  - BVT
+  - HMD
+  - SGS
