@@ -61,7 +61,11 @@ def get_country_list() -> list[tuple[str, str]]:
     if _conn is None:
         return []
     try:
-        rows = _conn.execute("SELECT iso3, name FROM countries ORDER BY name").fetchall()
+        rows = _conn.execute(
+            "SELECT c.iso3, c.name FROM countries c "
+            "WHERE c.iso3 IN (SELECT DISTINCT importer_iso3 FROM dependency_scores) "
+            "ORDER BY c.name"
+        ).fetchall()
         return [(str(r[0]), str(r[1])) for r in rows]
     except Exception as exc:
         logger.error("get_country_list query failed: {}", exc)

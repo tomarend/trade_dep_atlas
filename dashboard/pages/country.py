@@ -164,7 +164,7 @@ def layout():
                         "field": "essentiality_tier",
                         "headerName": "Tier",
                         "width": 100,
-                        "filter": "agSetColumnFilter",
+                        "filter": "agTextColumnFilter",
                         "cellStyle": {
                             "function": """
                                 params.value === 'critical' ? {'color': '#dc2626', 'fontWeight': '600'}
