@@ -10,8 +10,14 @@ from dashboard import data
 def _build_sidebar() -> dbc.Col:
     return dbc.Col(
         [
-            html.H4("DependencyAtlas", className="brand-title"),
-            html.Hr(className="mt-1 mb-3"),
+            html.Div(
+                [
+                    html.H4("DependencyAtlas", className="brand-title"),
+                    html.P("Import risk analytics", className="brand-tagline"),
+                ],
+                className="brand-wrap",
+            ),
+            html.Hr(className="mt-0 mb-1"),
             dbc.Nav(
                 [
                     dbc.NavLink("Country Exposure", href="/country", active="exact"),
@@ -32,7 +38,7 @@ def _build_footer() -> dbc.Row:
     return dbc.Row(
         dbc.Col(
             html.Footer(
-                f"Data: BACI {min_year}–{max_year} · CEPII",
+                f"Data: BACI {min_year}\u2013{max_year} \u00b7 CEPII \u00b7 WGI \u00b7 GSDB",
                 className="footer-text",
             ),
             width=12,
@@ -65,7 +71,8 @@ def create_layout() -> dbc.Container:
                 [
                     _build_sidebar(),
                     dbc.Col(page_children, id="page-content", width=10),
-                ]
+                ],
+                className="g-0",
             ),
             _build_footer(),
         ],

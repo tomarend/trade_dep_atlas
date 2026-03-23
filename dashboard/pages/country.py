@@ -1,4 +1,4 @@
-"""Country Exposure stub page for DependencyAtlas (Phase 4 will add full content)."""
+"""Country Exposure stub page."""
 
 import dash
 import dash_bootstrap_components as dbc
@@ -10,38 +10,64 @@ dash.register_page(
     __name__,
     path="/country",
     name="Country Exposure",
-    title="DependencyAtlas — Country Exposure",
+    title="DependencyAtlas \u2014 Country Exposure",
 )
 
 
 def layout():
-    """Callable layout — evaluated per request so get_default_country() is called at render time."""
     default_country = data.get_default_country()
-    return dbc.Container(
+    min_yr, max_yr = data.get_year_range()
+    return html.Div(
         [
-            dbc.Row(
-                dbc.Col(html.H3("Country Exposure"), width=12),
-                className="mb-3",
+            html.Div(
+                [
+                    html.H3("Country Exposure"),
+                    html.P(
+                        "Supplier concentration and geopolitical risk by importing country.",
+                        className="page-subtitle",
+                    ),
+                ],
+                className="page-header",
             ),
-            dbc.Row(
-                dbc.Col(
-                    dcc.Loading(
-                        id="loading-country-content",
-                        type="circle",
-                        children=html.Div(
-                            id="country-content-placeholder",
-                            children=dbc.Alert(
-                                f"Country view coming in Phase 4. Default selection: {default_country}",
-                                color="info",
+            dcc.Loading(
+                id="loading-country-content",
+                type="circle",
+                children=html.Div(
+                    id="country-content-placeholder",
+                    children=html.Div(
+                        [
+                            html.Div("\U0001f310", className="stub-icon"),
+                            html.Span("Coming in Phase 4", className="stub-badge"),
+                            html.H5("Country Exposure Maps & Tables"),
+                            html.P(
+                                "Choropleth maps, supplier concentration charts, and "
+                                "risk breakdowns by country will appear here."
+                            ),
+                            html.Div(
+                                [
+                                    html.Span(
+                                        [
+                                            html.Span("Default country", className="chip-label"),
+                                            html.Span(": "),
+                                            html.Span(default_country, className="chip-value"),
+                                        ],
+                                        className="stat-chip",
+                                    ),
+                                    html.Span(
+                                        [
+                                            html.Span("Years", className="chip-label"),
+                                            html.Span(": "),
+                                            html.Span(f"{min_yr}\u2013{max_yr}", className="chip-value"),
+                                        ],
+                                        className="stat-chip",
+                                    ),
+                                ],
                                 className="mt-3",
                             ),
-                            style={"minHeight": "400px"},
-                        ),
+                        ],
+                        className="stub-card",
                     ),
-                    width=12,
-                )
+                ),
             ),
         ],
-        fluid=True,
-        className="py-4",
     )

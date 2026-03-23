@@ -249,7 +249,11 @@ def _tab_sources() -> dbc.Card:
 
 layout = dbc.Container(
     [
-        html.H2("Methodology", className="mt-4 mb-3"),
+        html.Div([
+        html.H3("Methodology"),
+        html.P("Scoring methodology and data sources for the supply-risk index.",
+               className="page-subtitle"),
+    ], className="page-header"),
         dbc.Tabs(
             [
                 dbc.Tab(_tab_hhi(), label="HHI Concentration", tab_id="tab-hhi"),
@@ -262,5 +266,5 @@ layout = dbc.Container(
         ),
     ],
     fluid=False,
-    className="py-4",
+    className="py-4 about-content",
 )
