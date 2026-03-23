@@ -232,3 +232,113 @@ def get_supplier_breakdown(importer_iso3: str, hs6: str, year: int | None = None
     except Exception as exc:
         logger.error("get_supplier_breakdown query failed: {}", exc)
     return []
+
+
+# ---------------------------------------------------------------------------
+# Parameterized queries for Phase 5: Product->Countries View
+# ---------------------------------------------------------------------------
+
+
+@lru_cache(maxsize=1)
+def get_product_list() -> list[dict]:
+    """Return all products with hs2, hs4, hs6, description for hierarchical selector."""
+    if _conn is None:
+        return []
+    try:
+        rows = _conn.execute(
+            "SELECT hs2, hs4, hs6, description FROM products ORDER BY hs2, hs4, hs6"
+        ).fetchall()
+        return [
+            {"hs2": str(r[0]), "hs4": str(r[1]), "hs6": str(r[2]), "description": str(r[3])}
+            for r in rows
+        ]
+    except Exception as exc:
+        logger.error("get_product_list query failed: {}", exc)
+    return []
+
+
+def get_importer_scores(hs6: str, year: int | None = None) -> list[dict]:
+    """Return per-importer dependency scores for the given product and year."""
+    if _conn is None:
+        return []
+    yr = year or get_year_range()[1]
+    try:
+        rows = _conn.execute(
+            """
+            SELECT
+                sub.importer_iso3,
+                COALESCE(c.name, sub.importer_iso3) AS importer_name,
+                sub.hhi,
+                sub.basket_geo_risk,
+                sub.essentiality_score,
+                sub.composite_score,
+                sub.essentiality_tier
+            FROM (
+                SELECT DISTINCT
+                    importer_iso3, hhi, basket_geo_risk,
+                    essentiality_score, composite_score, essentiality_tier
+                FROM dependency_scores
+                WHERE hs6 = ? AND year = ?
+            ) sub
+            LEFT JOIN countries c ON sub.importer_iso3 = c.iso3
+            ORDER BY sub.composite_score DESC
+            """,
+            [hs6, yr],
+        ).fetchall()
+        cols = ["importer_iso3", "importer_name", "hhi", "basket_geo_risk",
+                "essentiality_score", "composite_score", "essentiality_tier"]
+        return [
+            {
+                c: (round(v, 4) if isinstance(v, float) else v)
+                for c, v in zip(cols, row)
+            }
+            for row in rows
+        ]
+    except Exception as exc:
+        logger.error("get_importer_scores query failed: {}", exc)
+    return []
+
+
+def get_product_summary(hs6: str, year: int | None = None) -> dict:
+    """Return aggregate summary stats for the given product across all importers."""
+    if _conn is None:
+        return {
+            "avg_hhi": 0, "avg_geo_risk": 0, "avg_essentiality": 0,
+            "avg_composite": 0, "importer_count": 0, "high_risk_count": 0,
+        }
+    yr = year or get_year_range()[1]
+    try:
+        row = _conn.execute(
+            """
+            SELECT
+                AVG(hhi) AS avg_hhi,
+                AVG(basket_geo_risk) AS avg_geo_risk,
+                AVG(essentiality_score) AS avg_essentiality,
+                AVG(composite_score) AS avg_composite,
+                COUNT(*) AS importer_count,
+                SUM(CASE WHEN composite_score > 0.7 THEN 1 ELSE 0 END) AS high_risk_count
+            FROM (
+                SELECT DISTINCT
+                    importer_iso3, hhi, basket_geo_risk,
+                    essentiality_score, composite_score
+                FROM dependency_scores
+                WHERE hs6 = ? AND year = ?
+            ) sub
+            """,
+            [hs6, yr],
+        ).fetchone()
+        if row:
+            return {
+                "avg_hhi": round(float(row[0] or 0), 3),
+                "avg_geo_risk": round(float(row[1] or 0), 3),
+                "avg_essentiality": round(float(row[2] or 0), 3),
+                "avg_composite": round(float(row[3] or 0), 3),
+                "importer_count": int(row[4] or 0),
+                "high_risk_count": int(row[5] or 0),
+            }
+    except Exception as exc:
+        logger.error("get_product_summary query failed: {}", exc)
+    return {
+        "avg_hhi": 0, "avg_geo_risk": 0, "avg_essentiality": 0,
+        "avg_composite": 0, "importer_count": 0, "high_risk_count": 0,
+    }
