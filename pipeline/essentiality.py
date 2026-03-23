@@ -239,9 +239,15 @@ def compute_essentiality_scores(
             "crm_listed_since": int(crm_since) if crm_since else None,
         })
 
-    return pl.DataFrame(rows).with_columns(
-        pl.col("crm_listed_since").cast(pl.Int64, strict=False)
-    )
+    schema = {
+        "hs6": pl.Utf8,
+        "category": pl.Utf8,
+        "essentiality_tier": pl.Utf8,
+        "essentiality_score": pl.Float64,
+        "global_export_hhi": pl.Float64,
+        "crm_listed_since": pl.Int64,
+    }
+    return pl.DataFrame(rows, schema=schema)
 
 
 def run_essentiality_scoring(config: dict) -> dict:
