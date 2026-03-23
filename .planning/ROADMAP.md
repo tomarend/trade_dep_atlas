@@ -101,7 +101,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 04.1-01-PLAN.md — Fix product descriptions, country regions, georisk forward-fill, rebuild DuckDB
+- [x] 04.1-01-PLAN.md — Fix product descriptions, country regions, georisk forward-fill, rebuild DuckDB
 
 ### Phase 5: Product→Countries View & Cross-Linking
 **Goal**: User can select any HS6 product and see which importing countries are most exposed, with seamless bidirectional navigation between both analytical views
@@ -111,12 +111,12 @@ Plans:
   1. User can browse and select an HS6 product via hierarchical selector (HS2→HS4→HS6) and see a ranked, sortable table of importers by dependency score with summary statistics
   2. User can view a choropleth world map with importers colored by dependency score for the selected product
   3. User can click any product in the country view to jump to its product view, and click any country in the product view to jump to its country view
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 05-01: TBD
-- [ ] 05-02: TBD
-- [ ] 05-03: TBD
+- [ ] 05-01-PLAN.md — Data access queries + product page layout with HS hierarchy selector and summary cards
+- [ ] 05-02-PLAN.md — AG Grid importer table with sorting, filtering, and choropleth world map
+- [ ] 05-03-PLAN.md — Bidirectional cross-linking between country and product views
 
 ### Phase 6: Time Series & Advanced Visualizations
 **Goal**: Dashboard provides temporal analysis and portfolio-quality Sankey and network visualizations that reveal trade flow structure and evolution over time
@@ -145,8 +145,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6
 | 2. Scoring Pipeline & Storage | 0/3 | Not started | - |
 | 3. Dashboard Shell & Data Access | 0/3 | Not started | - |
 | 4. Country→Products View | 4/4 | Complete | - |
-| 4.1 Data Quality Fixes | 0/1 | Planned | - |
-| 5. Product→Countries View & Cross-Linking | 0/3 | Not started | - |
+| 4.1 Data Quality Fixes | 1/1 | Complete | - |
+| 5. Product→Countries View & Cross-Linking | 0/3 | Planned | - |
 | 6. Time Series & Advanced Visualizations | 0/3 | Not started | - |
 
 ---
