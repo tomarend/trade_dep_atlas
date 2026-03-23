@@ -81,13 +81,12 @@ Plans:
   2. User can drill into any product to see supplier breakdown with share percentages, individual risk scores, and a choropleth map of suppliers colored by geopolitical risk
   3. User can adjust HHI/geo-risk/essentiality weights via interactive controls and see all scores and rankings update dynamically
   4. Score decomposition is visible through summary cards, radar/spider chart, and bar/line charts for each product-country pair
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 04-01: TBD
-- [ ] 04-02: TBD
-- [ ] 04-03: TBD
-- [ ] 04-04: TBD
+- [ ] 04-01-PLAN.md — Data access layer queries + country page layout with selector, summary cards, weight sliders
+- [ ] 04-02-PLAN.md — AG Grid product table with sorting, filtering, conditional formatting, weight recalculation
+- [ ] 04-03-PLAN.md — Product drill-down panel with supplier table, choropleth map, radar chart, bar chart
 
 ### Phase 5: Product→Countries View & Cross-Linking
 **Goal**: User can select any HS6 product and see which importing countries are most exposed, with seamless bidirectional navigation between both analytical views
@@ -130,10 +129,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Data Pipeline & Ingestion | 0/3 | Planned | - |
 | 2. Scoring Pipeline & Storage | 0/3 | Not started | - |
 | 3. Dashboard Shell & Data Access | 0/3 | Not started | - |
-| 4. Country→Products View | 0/4 | Not started | - |
+| 4. Country→Products View | 0/3 | Planned | - |
 | 5. Product→Countries View & Cross-Linking | 0/3 | Not started | - |
 | 6. Time Series & Advanced Visualizations | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-03-17*
-*Last updated: 2026-03-18*
+*Last updated: 2026-03-23*
