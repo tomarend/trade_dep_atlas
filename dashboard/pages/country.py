@@ -1,6 +1,7 @@
 """Country Exposure page — primary analytical view for the DependencyAtlas dashboard."""
 
 import dash
+import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
 from dash import callback, clientside_callback, dcc, html, Input, Output, State, no_update
 
@@ -102,11 +103,94 @@ def layout():
         # ── Data store ───────────────────────────────────────────────────
         dcc.Store(id="country-data-store", storage_type="memory"),
 
-        # ── Product table placeholder (Plan 02) ──────────────────────────
-        html.Div(id="product-table-container", className="mb-4"),
+        # ── AG Grid product table ────────────────────────────────────────
+        dcc.Loading(
+            dag.AgGrid(
+                id="product-table",
+                columnDefs=[
+                    {
+                        "field": "hs6",
+                        "headerName": "HS6 Code",
+                        "width": 120,
+                        "filter": "agTextColumnFilter",
+                        "pinned": "left",
+                    },
+                    {
+                        "field": "description",
+                        "headerName": "Product Description",
+                        "flex": 2,
+                        "filter": "agTextColumnFilter",
+                        "tooltipField": "description",
+                    },
+                    {
+                        "field": "weighted_composite",
+                        "headerName": "Composite Score",
+                        "width": 150,
+                        "sort": "desc",
+                        "filter": "agNumberColumnFilter",
+                        "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
+                        "cellStyle": {
+                            "function": """
+                                params.value > 0.7 ? {'color': '#dc2626', 'fontWeight': '600'}
+                                : params.value > 0.4 ? {'color': '#d97706', 'fontWeight': '600'}
+                                : {'color': '#16a34a'}
+                            """
+                        },
+                    },
+                    {
+                        "field": "hhi",
+                        "headerName": "HHI",
+                        "width": 100,
+                        "filter": "agNumberColumnFilter",
+                        "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
+                    },
+                    {
+                        "field": "basket_geo_risk",
+                        "headerName": "Geo Risk",
+                        "width": 110,
+                        "filter": "agNumberColumnFilter",
+                        "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
+                    },
+                    {
+                        "field": "essentiality_score",
+                        "headerName": "Essentiality",
+                        "width": 120,
+                        "filter": "agNumberColumnFilter",
+                        "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
+                    },
+                    {
+                        "field": "essentiality_tier",
+                        "headerName": "Tier",
+                        "width": 100,
+                        "filter": "agSetColumnFilter",
+                        "cellStyle": {
+                            "function": """
+                                params.value === 'critical' ? {'color': '#dc2626', 'fontWeight': '600'}
+                                : params.value === 'important' ? {'color': '#d97706'}
+                                : {}
+                            """
+                        },
+                    },
+                ],
+                defaultColDef={
+                    "sortable": True,
+                    "resizable": True,
+                    "filter": True,
+                },
+                dashGridOptions={
+                    "rowSelection": {"mode": "singleRow", "checkboxes": False},
+                    "animateRows": True,
+                    "pagination": False,
+                    "domLayout": "normal",
+                },
+                style={"height": "500px"},
+                className="ag-theme-alpine",
+            ),
+            type="circle",
+        ),
 
         # ── Drill-down placeholder (Plan 03) ─────────────────────────────
-        html.Div(id="product-drilldown-container"),
+        html.Div(id="product-drilldown-container", className="mt-4"),
     ])
 
 
@@ -228,3 +312,23 @@ def update_summary_cards(products, w_hhi, w_geo, w_ess):
             html.Span(f"{critical_count} critical", className="text-muted small"),
         ])), md=3),
     ], className="g-3")
+
+
+@callback(
+    Output("product-table", "rowData"),
+    [Input("country-data-store", "data"),
+     Input("weight-hhi", "value"),
+     Input("weight-geo", "value"),
+     Input("weight-ess", "value")],
+)
+def update_product_table(products, w_hhi, w_geo, w_ess):
+    """Recalculate composite scores with current weights and update AG Grid."""
+    if not products:
+        return []
+    for p in products:
+        p["weighted_composite"] = round(
+            w_hhi * p["hhi"] + w_geo * p["basket_geo_risk"] + w_ess * p["essentiality_score"],
+            4,
+        )
+    products.sort(key=lambda x: x["weighted_composite"], reverse=True)
+    return products
