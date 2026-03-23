@@ -3,6 +3,7 @@
 import dash
 import dash_ag_grid as dag
 import dash_bootstrap_components as dbc
+import plotly.express as px
 import plotly.graph_objects as go
 from dash import callback, dcc, html, Input, Output, State, no_update
 
@@ -126,10 +127,92 @@ def layout():
         # -- Data store --
         dcc.Store(id="product-data-store", storage_type="memory"),
 
-        # -- Importer table placeholder (Plan 02) --
-        html.Div(id="importer-table-container"),
+        # -- AG Grid importer table --
+        dcc.Loading(
+            dag.AgGrid(
+                id="importer-table",
+                columnDefs=[
+                    {
+                        "field": "importer_iso3",
+                        "headerName": "ISO3 Code",
+                        "width": 100,
+                        "filter": "agTextColumnFilter",
+                        "pinned": "left",
+                    },
+                    {
+                        "field": "importer_name",
+                        "headerName": "Country",
+                        "flex": 2,
+                        "filter": "agTextColumnFilter",
+                    },
+                    {
+                        "field": "composite_score",
+                        "headerName": "Composite Score",
+                        "width": 150,
+                        "sort": "desc",
+                        "filter": "agNumberColumnFilter",
+                        "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
+                        "cellStyle": {
+                            "function": """
+                                params.value > 0.7 ? {'color': '#dc2626', 'fontWeight': '600'}
+                                : params.value > 0.4 ? {'color': '#d97706', 'fontWeight': '600'}
+                                : {'color': '#16a34a'}
+                            """
+                        },
+                    },
+                    {
+                        "field": "hhi",
+                        "headerName": "HHI",
+                        "width": 100,
+                        "filter": "agNumberColumnFilter",
+                        "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
+                    },
+                    {
+                        "field": "basket_geo_risk",
+                        "headerName": "Geo Risk",
+                        "width": 110,
+                        "filter": "agNumberColumnFilter",
+                        "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
+                    },
+                    {
+                        "field": "essentiality_score",
+                        "headerName": "Essentiality",
+                        "width": 120,
+                        "filter": "agNumberColumnFilter",
+                        "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
+                    },
+                    {
+                        "field": "essentiality_tier",
+                        "headerName": "Tier",
+                        "width": 100,
+                        "filter": "agTextColumnFilter",
+                        "cellStyle": {
+                            "function": """
+                                params.value === 'critical' ? {'color': '#dc2626', 'fontWeight': '600'}
+                                : params.value === 'important' ? {'color': '#d97706'}
+                                : {}
+                            """
+                        },
+                    },
+                ],
+                defaultColDef={
+                    "sortable": True,
+                    "resizable": True,
+                    "filter": True,
+                },
+                dashGridOptions={
+                    "rowSelection": {"mode": "singleRow", "checkboxes": False},
+                    "animateRows": True,
+                    "pagination": False,
+                    "domLayout": "normal",
+                },
+                style={"height": "500px"},
+                className="ag-theme-alpine",
+            ),
+            type="circle",
+        ),
 
-        # -- Map placeholder (Plan 02) --
+        # -- Choropleth map --
         html.Div(id="product-map-container", className="mt-3"),
     ])
 
@@ -193,14 +276,6 @@ def update_product_summary(importer_data, hs6):
 
     summary = data.get_product_summary(hs6)
 
-    # Get essentiality info from product list
-    products = data.get_product_list()
-    ess_tier = "standard"
-    ess_score = summary["avg_essentiality"]
-    for p in products:
-        if p["hs6"] == hs6:
-            break
-
     avg_composite = summary["avg_composite"]
     level = "high" if avg_composite > 0.7 else "medium" if avg_composite > 0.4 else "low"
 
@@ -258,3 +333,73 @@ def update_product_summary(importer_data, hs6):
             ),
         ]),
     ])
+
+
+@callback(
+    Output("importer-table", "rowData"),
+    Input("product-data-store", "data"),
+)
+def update_importer_table(importer_data):
+    """Populate AG Grid with importer scores from the data store."""
+    if not importer_data:
+        return []
+    return importer_data
+
+
+@callback(
+    Output("product-map-container", "children"),
+    Input("product-data-store", "data"),
+    State("product-hs6-selector", "value"),
+)
+def update_product_choropleth(importer_data, hs6):
+    """Render choropleth world map of importers colored by dependency score."""
+    if not importer_data:
+        return html.Div(
+            "Select a product to view the dependency map.",
+            className="text-muted p-3",
+        )
+
+    # Look up product description
+    description = hs6 or ""
+    products = data.get_product_list()
+    for p in products:
+        if p["hs6"] == hs6:
+            description = p["description"]
+            break
+
+    choropleth_data = {
+        "iso3": [r["importer_iso3"] for r in importer_data],
+        "name": [r["importer_name"] for r in importer_data],
+        "composite_score": [r["composite_score"] for r in importer_data],
+        "hhi": [r["hhi"] for r in importer_data],
+    }
+
+    fig = px.choropleth(
+        choropleth_data,
+        locations="iso3",
+        color="composite_score",
+        hover_name="name",
+        hover_data={"composite_score": ":.3f", "hhi": ":.3f", "iso3": False},
+        color_continuous_scale="YlOrRd",
+        range_color=[0, 1],
+        labels={"composite_score": "Dependency Score", "hhi": "HHI"},
+        title=f"Import Dependency by Country \u2014 {description}",
+        template="plotly_white",
+    )
+    fig.update_layout(
+        margin=dict(l=0, r=0, t=40, b=0),
+        height=400,
+        geo=dict(
+            showframe=False,
+            showcoastlines=True,
+            coastlinecolor="LightGray",
+            projection_type="natural earth",
+        ),
+        font_family="Inter",
+    )
+
+    return dcc.Graph(
+        id="product-choropleth",
+        figure=fig,
+        config={"displayModeBar": False},
+    )
