@@ -6,6 +6,7 @@ import dash_bootstrap_components as dbc
 import plotly.express as px
 import plotly.graph_objects as go
 from dash import callback, dcc, html, Input, Output, State, no_update
+from urllib.parse import parse_qs
 
 from dashboard import data
 
@@ -53,9 +54,18 @@ def _build_hs6_options(products, hs4):
     ]
 
 
-def layout():
+def layout(**kwargs):
     products = data.get_product_list()
     default_hs6 = data.get_default_product()
+
+    # Check for URL query parameter ?hs6=XXXXXX
+    hs6_param = kwargs.get("hs6")
+    if hs6_param:
+        # Validate it exists in our product list
+        for p in products:
+            if p["hs6"] == hs6_param:
+                default_hs6 = hs6_param
+                break
 
     # Find hs2/hs4 for default product
     default_hs2, default_hs4 = None, None
@@ -144,6 +154,8 @@ def layout():
                         "headerName": "Country",
                         "flex": 2,
                         "filter": "agTextColumnFilter",
+                        # Cross-link to country view
+                        "cellRenderer": {"function": "params.value ? `<a href='/country?iso3=${params.data.importer_iso3}' style='color:#2563eb;text-decoration:none'>${params.value}</a>` : ''"},
                     },
                     {
                         "field": "composite_score",
@@ -208,6 +220,7 @@ def layout():
                 },
                 style={"height": "500px"},
                 className="ag-theme-alpine",
+                dangerously_allow_code=True,
             ),
             type="circle",
         ),

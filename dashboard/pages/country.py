@@ -17,12 +17,19 @@ dash.register_page(
 )
 
 
-def layout():
+def layout(**kwargs):
     country_options = [{"label": name, "value": iso3} for iso3, name in data.get_country_list()]
     default_country = data.get_default_country()
 
+    # Handle URL query parameter ?iso3=XXX
+    iso3_param = kwargs.get("iso3")
+    if iso3_param:
+        valid_iso3s = {iso3 for iso3, _ in data.get_country_list()}
+        if iso3_param in valid_iso3s:
+            default_country = iso3_param
+
     return html.Div([
-        # ── Page header ──────────────────────────────────────────────────
+        # -- Page header --
         html.Div([
             html.H3("Country Exposure"),
             html.P(
@@ -31,7 +38,7 @@ def layout():
             ),
         ], className="page-header"),
 
-        # ── Country selector ─────────────────────────────────────────────
+        # -- Country selector --
         dbc.Row([
             dbc.Col([
                 dbc.Label("Importing Country", html_for="country-selector", className="fw-semibold"),
@@ -46,10 +53,10 @@ def layout():
             ], md=4),
         ], className="mb-3"),
 
-        # ── Summary cards ────────────────────────────────────────────────
+        # -- Summary cards --
         html.Div(id="country-summary-cards", className="mb-3"),
 
-        # ── Weight controls (collapsible) ────────────────────────────────
+        # -- Weight controls (collapsible) --
         dbc.Row([
             dbc.Col([
                 dbc.Button(
@@ -102,10 +109,10 @@ def layout():
             ]),
         ], className="mb-3"),
 
-        # ── Data store ───────────────────────────────────────────────────
+        # -- Data store --
         dcc.Store(id="country-data-store", storage_type="memory"),
 
-        # ── AG Grid product table ────────────────────────────────────────
+        # -- AG Grid product table --
         dcc.Loading(
             dag.AgGrid(
                 id="product-table",
@@ -116,6 +123,8 @@ def layout():
                         "width": 120,
                         "filter": "agTextColumnFilter",
                         "pinned": "left",
+                        # Cross-link to product view
+                        "cellRenderer": {"function": "params.value ? `<a href='/product?hs6=${params.value}' style='color:#2563eb;text-decoration:none'>${params.value}</a>` : ''"},
                     },
                     {
                         "field": "description",
@@ -187,16 +196,17 @@ def layout():
                 },
                 style={"height": "500px"},
                 className="ag-theme-alpine",
+                dangerously_allow_code=True,
             ),
             type="circle",
         ),
 
-        # ── Drill-down panel ─────────────────────────────────────────────
+        # -- Drill-down panel --
         html.Div(id="product-drilldown-container", className="mt-4"),
     ])
 
 
-# ── Callbacks ────────────────────────────────────────────────────────────
+# -- Callbacks --
 
 
 @callback(
@@ -388,7 +398,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess):
     if not suppliers:
         return dbc.Alert(f"No supplier data available for {hs6}.", color="warning")
 
-    # ── Supplier Table ───────────────────────────────────────────────
+    # -- Supplier Table --
     supplier_table = dbc.Table(
         [
             html.Thead(html.Tr([
@@ -422,7 +432,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess):
         className="mt-2",
     )
 
-    # ── Choropleth Map ───────────────────────────────────────────────
+    # -- Choropleth Map --
     choropleth_data = {
         "iso3": [s["exporter_iso3"] for s in suppliers],
         "name": [s["exporter_name"] for s in suppliers],
@@ -454,7 +464,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess):
         font_family="Inter",
     )
 
-    # ── Radar Chart: Score Decomposition ─────────────────────────────
+    # -- Radar Chart: Score Decomposition --
     radar_fig = go.Figure()
     radar_fig.add_trace(go.Scatterpolar(
         r=[product["hhi"], product["basket_geo_risk"], product["essentiality_score"]],
@@ -474,7 +484,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess):
         height=300,
     )
 
-    # ── Bar Chart: Supplier Share Concentration ──────────────────────
+    # -- Bar Chart: Supplier Share Concentration --
     top_suppliers = suppliers[:10]
     bar_fig = px.bar(
         x=[s["exporter_name"] for s in top_suppliers],
@@ -494,7 +504,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess):
         showlegend=False,
     )
 
-    # ── Assemble drill-down panel ────────────────────────────────────
+    # -- Assemble drill-down panel --
     weighted = product.get("weighted_composite", product.get("composite_score", 0))
 
     return html.Div([
