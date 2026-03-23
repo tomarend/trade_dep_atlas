@@ -7,56 +7,7 @@ from dash import dcc, html
 from dashboard import data
 
 
-def _error_layout() -> dbc.Container:
-    """Full-page error displayed when dashboard.duckdb is absent."""
-    return dbc.Container(
-        [
-            dcc.Location(id="url"),
-            dbc.Alert(
-                [
-                    html.H4("No data found", className="alert-heading"),
-                    html.P(
-                        "Run "
-                        + html.Code("python -m pipeline").to_plotly_json()["props"]["children"]
-                        + " to build the database, then restart the dashboard.",
-                    ),
-                ],
-                color="danger",
-                className="mt-5",
-            ),
-        ],
-        fluid=False,
-        className="py-5",
-    )
-
-
-def _build_error_layout() -> dbc.Container:
-    """Return an error container without using .to_plotly_json() (simpler)."""
-    return dbc.Container(
-        [
-            dcc.Location(id="url"),
-            dbc.Alert(
-                [
-                    html.H4("No data found", className="alert-heading"),
-                    html.P(
-                        [
-                            "Run ",
-                            html.Code("python -m pipeline"),
-                            " to build the database, then restart the dashboard.",
-                        ]
-                    ),
-                ],
-                color="danger",
-                className="mt-5",
-            ),
-        ],
-        fluid=False,
-        className="py-5",
-    )
-
-
 def _build_sidebar() -> dbc.Col:
-    """Left navigation sidebar."""
     return dbc.Col(
         [
             html.H4("DependencyAtlas", className="brand-title"),
@@ -77,7 +28,6 @@ def _build_sidebar() -> dbc.Col:
 
 
 def _build_footer() -> dbc.Row:
-    """Full-width footer with live data freshness."""
     min_year, max_year = data.get_year_range()
     return dbc.Row(
         dbc.Col(
@@ -90,18 +40,31 @@ def _build_footer() -> dbc.Row:
     )
 
 
-def create_layout() -> dbc.Container:
-    """Return the full app layout (or error layout if DB is absent)."""
-    if not data.db_available:
-        return _build_error_layout()
+def _offline_banner() -> dbc.Alert:
+    return dbc.Alert(
+        [
+            html.Strong("No data found. "),
+            "Run ",
+            html.Code("python -m pipeline"),
+            " to build the database, then restart the dashboard.",
+        ],
+        color="warning",
+        dismissable=True,
+        className="mb-3",
+    )
 
+
+def create_layout() -> dbc.Container:
+    page_children = [dash.page_container]
+    if not data.db_available:
+        page_children = [_offline_banner()] + page_children
     return dbc.Container(
         [
             dcc.Location(id="url", refresh=False),
             dbc.Row(
                 [
                     _build_sidebar(),
-                    dbc.Col(dash.page_container, id="page-content", width=10),
+                    dbc.Col(page_children, id="page-content", width=10),
                 ]
             ),
             _build_footer(),
