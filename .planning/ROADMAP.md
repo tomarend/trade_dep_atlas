@@ -65,12 +65,12 @@ Plans:
   3. Dashboard displays data freshness indicator showing latest available year and year range
   4. All page transitions use loading states and respond in under one second
   5. Application runs with gunicorn and has Docker configuration for deployment
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 03-01: TBD
-- [ ] 03-02: TBD
-- [ ] 03-03: TBD
+- [ ] 03-01-PLAN.md — Data access layer (DuckDB singleton) + Dash app shell with sidebar layout
+- [ ] 03-02-PLAN.md — Full methodology page (4 tabs, MathJax formulas) + stub pages with loading states
+- [ ] 03-03-PLAN.md — Dockerfile + human verification checkpoint
 
 ### Phase 4: Country→Products View
 **Goal**: User can select any importing country and explore its product vulnerabilities through interactive tables, maps, charts, and score decomposition with adjustable weights
