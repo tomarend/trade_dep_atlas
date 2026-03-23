@@ -322,3 +322,12 @@ body {
 }
 .card { border-color: #e2e8f0; border-radius: 8px; }
 .card-body { padding: 1.25rem 1.5rem; }
+
+
+/* ── Phase 4: Score & drill-down styling ─────────────────────────────── */
+.score-high { color: #dc2626; }
+.score-medium { color: #d97706; }
+.score-low { color: #16a34a; }
+.score-value { font-weight: 700; }
+.drilldown-panel { border-left: 3px solid var(--bs-primary); border-radius: 8px; }
+.drilldown-header { font-weight: 600; margin-bottom: 1rem; }

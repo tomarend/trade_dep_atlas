@@ -1,8 +1,8 @@
-"""Country Exposure stub page."""
+"""Country Exposure page — primary analytical view for the DependencyAtlas dashboard."""
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import callback, clientside_callback, dcc, html, Input, Output, State, no_update
 
 from dashboard import data
 
@@ -15,59 +15,216 @@ dash.register_page(
 
 
 def layout():
+    country_options = [{"label": name, "value": iso3} for iso3, name in data.get_country_list()]
     default_country = data.get_default_country()
-    min_yr, max_yr = data.get_year_range()
-    return html.Div(
-        [
-            html.Div(
-                [
-                    html.H3("Country Exposure"),
-                    html.P(
-                        "Supplier concentration and geopolitical risk by importing country.",
-                        className="page-subtitle",
-                    ),
-                ],
-                className="page-header",
+
+    return html.Div([
+        # ── Page header ──────────────────────────────────────────────────
+        html.Div([
+            html.H3("Country Exposure"),
+            html.P(
+                "Supplier concentration and geopolitical risk by importing country.",
+                className="page-subtitle",
             ),
-            dcc.Loading(
-                id="loading-country-content",
-                type="circle",
-                children=html.Div(
-                    id="country-content-placeholder",
-                    children=html.Div(
-                        [
-                            html.Div("\U0001f310", className="stub-icon"),
-                            html.Span("Coming in Phase 4", className="stub-badge"),
-                            html.H5("Country Exposure Maps & Tables"),
-                            html.P(
-                                "Choropleth maps, supplier concentration charts, and "
-                                "risk breakdowns by country will appear here."
-                            ),
-                            html.Div(
-                                [
-                                    html.Span(
-                                        [
-                                            html.Span("Default country", className="chip-label"),
-                                            html.Span(": "),
-                                            html.Span(default_country, className="chip-value"),
-                                        ],
-                                        className="stat-chip",
-                                    ),
-                                    html.Span(
-                                        [
-                                            html.Span("Years", className="chip-label"),
-                                            html.Span(": "),
-                                            html.Span(f"{min_yr}\u2013{max_yr}", className="chip-value"),
-                                        ],
-                                        className="stat-chip",
-                                    ),
-                                ],
-                                className="mt-3",
-                            ),
-                        ],
-                        className="stub-card",
-                    ),
+        ], className="page-header"),
+
+        # ── Country selector ─────────────────────────────────────────────
+        dbc.Row([
+            dbc.Col([
+                dbc.Label("Importing Country", html_for="country-selector", className="fw-semibold"),
+                dcc.Dropdown(
+                    id="country-selector",
+                    options=country_options,
+                    value=default_country,
+                    searchable=True,
+                    clearable=False,
+                    placeholder="Select a country...",
                 ),
+            ], md=4),
+        ], className="mb-3"),
+
+        # ── Summary cards ────────────────────────────────────────────────
+        html.Div(id="country-summary-cards", className="mb-3"),
+
+        # ── Weight controls (collapsible) ────────────────────────────────
+        dbc.Row([
+            dbc.Col([
+                dbc.Button(
+                    "\u2699 Customize Weights",
+                    id="weights-toggle",
+                    color="light",
+                    size="sm",
+                    className="mb-2",
+                ),
+                dbc.Collapse(
+                    dbc.Card(dbc.CardBody([
+                        dbc.Row([
+                            dbc.Col([
+                                dbc.Label("HHI Concentration", className="small fw-semibold"),
+                                dcc.Slider(
+                                    id="weight-hhi", min=0, max=1, step=0.05, value=0.35,
+                                    marks=None,
+                                    tooltip={"placement": "bottom", "always_visible": True},
+                                    updatemode="drag",
+                                ),
+                            ], md=4),
+                            dbc.Col([
+                                dbc.Label("Geopolitical Risk", className="small fw-semibold"),
+                                dcc.Slider(
+                                    id="weight-geo", min=0, max=1, step=0.05, value=0.35,
+                                    marks=None,
+                                    tooltip={"placement": "bottom", "always_visible": True},
+                                    updatemode="drag",
+                                ),
+                            ], md=4),
+                            dbc.Col([
+                                dbc.Label("Essentiality", className="small fw-semibold"),
+                                dcc.Slider(
+                                    id="weight-ess", min=0, max=1, step=0.05, value=0.30,
+                                    marks=None,
+                                    tooltip={"placement": "bottom", "always_visible": True},
+                                    updatemode="drag",
+                                ),
+                            ], md=4),
+                        ]),
+                        html.Small(
+                            "Weights are constrained to sum to 1.0. "
+                            "Adjusting one slider proportionally adjusts the others.",
+                            className="text-muted",
+                        ),
+                    ])),
+                    id="weights-collapse",
+                    is_open=False,
+                ),
+            ]),
+        ], className="mb-3"),
+
+        # ── Data store ───────────────────────────────────────────────────
+        dcc.Store(id="country-data-store", storage_type="memory"),
+
+        # ── Product table placeholder (Plan 02) ──────────────────────────
+        html.Div(id="product-table-container", className="mb-4"),
+
+        # ── Drill-down placeholder (Plan 03) ─────────────────────────────
+        html.Div(id="product-drilldown-container"),
+    ])
+
+
+# ── Callbacks ────────────────────────────────────────────────────────────
+
+
+@callback(
+    Output("weights-collapse", "is_open"),
+    Input("weights-toggle", "n_clicks"),
+    State("weights-collapse", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_weights(n_clicks, is_open):
+    return not is_open
+
+
+# Proportional weight adjustment (clientside for instant feel)
+clientside_callback(
+    """
+    function(hhi, geo, ess) {
+        const sum = hhi + geo + ess;
+        if (Math.abs(sum - 1.0) < 0.001) return window.dash_clientside.no_update;
+        const tid = window.dash_clientside.callback_context.triggered_id;
+        if (tid === 'weight-hhi') {
+            const remainder = 1.0 - hhi;
+            const otherSum = geo + ess;
+            if (otherSum > 0) {
+                return [hhi, Math.round(remainder * geo / otherSum * 20) / 20,
+                        Math.round(remainder * ess / otherSum * 20) / 20];
+            }
+            return [hhi, Math.round(remainder / 2 * 20) / 20, Math.round(remainder / 2 * 20) / 20];
+        } else if (tid === 'weight-geo') {
+            const remainder = 1.0 - geo;
+            const otherSum = hhi + ess;
+            if (otherSum > 0) {
+                return [Math.round(remainder * hhi / otherSum * 20) / 20, geo,
+                        Math.round(remainder * ess / otherSum * 20) / 20];
+            }
+            return [Math.round(remainder / 2 * 20) / 20, geo, Math.round(remainder / 2 * 20) / 20];
+        } else {
+            const remainder = 1.0 - ess;
+            const otherSum = hhi + geo;
+            if (otherSum > 0) {
+                return [Math.round(remainder * hhi / otherSum * 20) / 20,
+                        Math.round(remainder * geo / otherSum * 20) / 20, ess];
+            }
+            return [Math.round(remainder / 2 * 20) / 20, Math.round(remainder / 2 * 20) / 20, ess];
+        }
+    }
+    """,
+    [Output("weight-hhi", "value"), Output("weight-geo", "value"), Output("weight-ess", "value")],
+    [Input("weight-hhi", "value"), Input("weight-geo", "value"), Input("weight-ess", "value")],
+    prevent_initial_call=True,
+)
+
+
+@callback(
+    Output("country-data-store", "data"),
+    Input("country-selector", "value"),
+)
+def load_country_data(country_iso3):
+    """Load product scores for the selected country into the client-side store."""
+    if not country_iso3:
+        return no_update
+    return data.get_product_scores(country_iso3)
+
+
+@callback(
+    Output("country-summary-cards", "children"),
+    [Input("country-data-store", "data"),
+     Input("weight-hhi", "value"),
+     Input("weight-geo", "value"),
+     Input("weight-ess", "value")],
+)
+def update_summary_cards(products, w_hhi, w_geo, w_ess):
+    """Render summary cards with weight-adjusted scores."""
+    if not products:
+        return html.Div(
+            "Select a country to view exposure analysis.",
+            className="text-muted p-3",
+        )
+
+    # Recalculate composite scores with current weights
+    for p in products:
+        p["weighted_composite"] = (
+            w_hhi * p["hhi"] + w_geo * p["basket_geo_risk"] + w_ess * p["essentiality_score"]
+        )
+
+    n = len(products)
+    avg_composite = sum(p["weighted_composite"] for p in products) / n
+    avg_hhi = sum(p["hhi"] for p in products) / n
+    avg_geo = sum(p["basket_geo_risk"] for p in products) / n
+    avg_ess = sum(p["essentiality_score"] for p in products) / n
+    critical_count = sum(1 for p in products if p["essentiality_tier"] == "critical")
+    high_risk = sum(1 for p in products if p["weighted_composite"] > 0.7)
+
+    level = "high" if avg_composite > 0.7 else "medium" if avg_composite > 0.4 else "low"
+
+    return dbc.Row([
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("Overall Exposure", className="text-muted mb-1 small fw-semibold"),
+            html.H2(f"{avg_composite:.3f}", className=f"mb-0 score-value score-{level}"),
+            html.Span(
+                f"{n} products \u00b7 {high_risk} high-risk",
+                className="text-muted small",
             ),
-        ],
-    )
+        ])), md=3),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("Concentration (HHI)", className="text-muted mb-1 small fw-semibold"),
+            html.H3(f"{avg_hhi:.3f}", className="mb-0"),
+        ])), md=3),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("Geo Risk", className="text-muted mb-1 small fw-semibold"),
+            html.H3(f"{avg_geo:.3f}", className="mb-0"),
+        ])), md=3),
+        dbc.Col(dbc.Card(dbc.CardBody([
+            html.P("Essentiality", className="text-muted mb-1 small fw-semibold"),
+            html.H3(f"{avg_ess:.3f}", className="mb-0"),
+            html.Span(f"{critical_count} critical", className="text-muted small"),
+        ])), md=3),
+    ], className="g-3")
