@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: Dashboard Shell & Data Access** - Multi-page Dash app with routing, methodology page, data access layer, loading states
 - [ ] **Phase 4: Country→Products View** - Primary analytical view with ranked tables, maps, charts, score decomposition, weight controls
 - [ ] **Phase 4.1: Data Quality Fixes** - INSERTED — Fix product descriptions, country regions, and georisk forward-fill
-- [ ] **Phase 5: Product→Countries View & Cross-Linking** - Second analytical entry point with HS hierarchy browsing and bidirectional cross-linking
+- [x] **Phase 5: Product→Countries View & Cross-Linking** - Second analytical entry point with HS hierarchy browsing and bidirectional cross-linking
 - [ ] **Phase 6: Time Series & Advanced Visualizations** - Year slider, trend charts, Sankey flow diagrams, network graph
 
 ## Phase Details
@@ -114,9 +114,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Data access queries + product page layout with HS hierarchy selector and summary cards
-- [ ] 05-02-PLAN.md — AG Grid importer table with sorting, filtering, and choropleth world map
-- [ ] 05-03-PLAN.md — Bidirectional cross-linking between country and product views
+- [x] 05-01-PLAN.md — Data access queries + product page layout with HS hierarchy selector and summary cards
+- [x] 05-02-PLAN.md — AG Grid importer table with sorting, filtering, and choropleth world map
+- [x] 05-03-PLAN.md — Bidirectional cross-linking between country and product views
 
 ### Phase 6: Time Series & Advanced Visualizations
 **Goal**: Dashboard provides temporal analysis and portfolio-quality Sankey and network visualizations that reveal trade flow structure and evolution over time
