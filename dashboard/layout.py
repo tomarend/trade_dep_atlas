@@ -12,7 +12,10 @@ def _build_sidebar() -> dbc.Col:
         [
             html.Div(
                 [
-                    html.H4("DependencyAtlas", className="brand-title"),
+                    html.H4([
+                        html.Span("Dependency", className="brand-dim"),
+                        html.Span("Atlas", className="brand-accent"),
+                    ], className="brand-title"),
                     html.P("Import risk analytics", className="brand-tagline"),
                 ],
                 className="brand-wrap",
