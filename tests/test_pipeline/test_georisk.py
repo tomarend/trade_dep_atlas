@@ -1,6 +1,7 @@
 """Tests for geopolitical risk scoring module."""
 
 from pathlib import Path
+from unittest.mock import patch
 
 import polars as pl
 import pytest
@@ -173,14 +174,19 @@ def test_geo_risk_no_sanctions():
 # ── integration tests ─────────────────────────────────────────────────────────
 
 def test_run_georisk_scoring_missing_wgi_raises(tmp_path):
-    """FileNotFoundError with instructions when wgi.csv is missing."""
+    """When wgi.csv is absent and auto-download fails, the error propagates."""
     (tmp_path / "governance").mkdir()
+    (tmp_path / "processed").mkdir()
     config = {
-        "processing": {"reference_dir": str(tmp_path)},
+        "processing": {
+            "reference_dir": str(tmp_path),
+            "processed_dir": str(tmp_path / "processed"),
+        },
         "scoring": {"output_dir": str(tmp_path / "scoring")},
     }
-    with pytest.raises(FileNotFoundError, match="wgi.csv"):
-        run_georisk_scoring(config)
+    with patch("pipeline.georisk._download_wgi", side_effect=OSError("no network")):
+        with pytest.raises(OSError, match="no network"):
+            run_georisk_scoring(config)
 
 
 def test_run_georisk_scoring_writes_parquet(tmp_path):
@@ -205,8 +211,13 @@ def test_run_georisk_scoring_writes_parquet(tmp_path):
     ]
     _sanctions_df(sanctions_rows).write_csv(str(gov_dir / "gsdb_sanctions.csv"))
 
+    processed_dir = tmp_path / "processed"
+    processed_dir.mkdir()
     config = {
-        "processing": {"reference_dir": str(tmp_path)},
+        "processing": {
+            "reference_dir": str(tmp_path),
+            "processed_dir": str(processed_dir),
+        },
         "scoring": {"output_dir": str(tmp_path / "scoring")},
     }
     result = run_georisk_scoring(config)

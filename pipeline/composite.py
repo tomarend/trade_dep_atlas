@@ -81,7 +81,7 @@ def compute_composite(
         how="left",
     ).with_columns(
         pl.col("global_export_hhi").fill_null(substitutability_fill ** 2),
-        pl.col("flags").fill_null(pl.lit([])),
+        pl.col("flags").fill_null(pl.lit([], dtype=pl.List(pl.Utf8))),
         pl.col("hs22_only").fill_null(False),
     )
 

@@ -8,6 +8,7 @@ import pytest
 
 from pipeline.download import (
     DownloadReport,
+    discover_baci_urls,
     download_baci,
     extract_zip,
     verify_baci_csv,
@@ -35,6 +36,78 @@ def _make_mock_response(content: bytes = b"t,i,j,k,v,q\n2020,842,156,854231,5000
 
         mock.raise_for_status.side_effect = HTTPError(f"HTTP {status_code}")
     return mock
+
+
+class TestDiscoverBaciUrls:
+    def _html(self, links: list[str]) -> str:
+        """Build minimal HTML page containing the given href values."""
+        hrefs = " ".join(f'<a href="{lnk}">dl</a>' for lnk in links)
+        return f"<html><body>{hrefs}</body></html>"
+
+    @patch("pipeline.download.requests.get")
+    def test_returns_only_latest_vintage_per_hs_revision(self, mock_get):
+        """Multiple vintages for same HS revision → only latest is returned."""
+        html = self._html([
+            "/BACI_HS92_V202201.zip",
+            "/BACI_HS92_V202301.zip",
+            "/BACI_HS92_V202401.zip",  # latest
+        ])
+        mock_get.return_value = MagicMock(text=html, raise_for_status=MagicMock())
+
+        result = discover_baci_urls("https://example.com/baci.html")
+
+        assert len(result) == 1
+        assert result[0]["filename"] == "BACI_HS92_V202401.zip"
+
+    @patch("pipeline.download.requests.get")
+    def test_one_entry_per_hs_revision(self, mock_get):
+        """H92 and H22 revisions → one entry each (H17 is filtered out)."""
+        html = self._html([
+            "/BACI_HS92_V202401.zip",
+            "/BACI_HS17_V202401.zip",
+            "/BACI_HS22_V202401.zip",
+        ])
+        mock_get.return_value = MagicMock(text=html, raise_for_status=MagicMock())
+
+        result = discover_baci_urls("https://example.com/baci.html")
+
+        revisions = {e["hs_revision"] for e in result}
+        assert revisions == {"H92", "H22"}
+        assert len(result) == 2
+
+    @patch("pipeline.download.requests.get")
+    def test_filters_archive_urls(self, mock_get):
+        """Links containing /archives/ in the path are excluded."""
+        html = self._html([
+            "/archives/BACI_HS92_V202201.zip",
+            "/archives/BACI_HS92_V202301.zip",
+            "/BACI_HS92_V202401.zip",  # current, not archived
+        ])
+        mock_get.return_value = MagicMock(text=html, raise_for_status=MagicMock())
+
+        result = discover_baci_urls("https://example.com/baci.html")
+
+        assert len(result) == 1
+        assert result[0]["filename"] == "BACI_HS92_V202401.zip"
+
+    @patch("pipeline.download.requests.get")
+    def test_returns_empty_on_no_matches(self, mock_get):
+        """No matching links → empty list, no error."""
+        mock_get.return_value = MagicMock(text="<html>no links</html>", raise_for_status=MagicMock())
+
+        result = discover_baci_urls("https://example.com/baci.html")
+
+        assert result == []
+
+    @patch("pipeline.download.requests.get")
+    def test_returns_empty_on_request_error(self, mock_get):
+        """Network failure → empty list returned, no exception raised."""
+        import requests as req
+        mock_get.side_effect = req.exceptions.ConnectionError("timeout")
+
+        result = discover_baci_urls("https://example.com/baci.html")
+
+        assert result == []
 
 
 class TestVerifyBaciCsv:
