@@ -154,3 +154,43 @@ Which phases cover which requirements. Updated during roadmap creation.
 ---
 *Requirements defined: 2026-03-17*
 *Last updated: 2026-03-17 after roadmap creation*
+
+---
+
+## v2.0 Milestone Requirements
+
+Requirements for the Dashboard Redesign milestone (Phases 7–9).
+Extends v1 requirements — v1 IDs are preserved and still tracked.
+
+### Data Pipeline (v2.0)
+
+- [ ] **DATA-06**: Download only HS92 + HS22 BACI revisions (not all 7), reducing raw data from ~45GB to ~17GB
+- [ ] **DATA-07**: BACI product code and country code metadata CSVs extracted to data/raw/ for HS92 and HS22 during download
+
+### Scoring (v2.0)
+
+- [ ] **SCOR-06**: Remove tier-based essentiality classification (critical/important/standard); pipeline/essentiality.py renamed to pipeline/flags.py, producing a `flags` list (e.g., crm_listed, energy, pharma, food, semiconductor, strategic_mineral) per product
+- [ ] **SCOR-07**: Use global_export_hhi as empirical substitutability proxy in composite score, replacing hand-crafted tier-derived essentiality_score: `composite = w1*hhi + w2*geo_risk + w3*global_export_hhi`
+- [ ] **SCOR-08**: DuckDB schema updated atomically: products dim has `flags LIST(VARCHAR)` column; `essentiality_score` and `essentiality_tier` removed; dependency_scores fact renames `essentiality_score` → `substitutability_score`
+
+### Country View (v2.0)
+
+- [ ] **CNTV-08**: Country page hero stat cards: total products, count above risk threshold, highest-risk product name, max composite score
+- [ ] **CNTV-09**: Country page scatter plot — HHI (x) vs global_export_hhi/substitutability (y), markers sized by log(import value), colored by composite score, top 200–500 products by composite score
+- [ ] **CNTV-10**: Country page bilateral risk panel — top-10 source countries ranked by weighted risk contribution `SUM(supplier_share × composite_score)`, displayed as horizontal bar chart with flag icons
+- [ ] **CNTV-11**: Weight slider label updated from "Essentiality" to "Substitutability" in country and product views
+
+### Product View (v2.0)
+
+- [ ] **PRDV-07**: Product page horizontal concentration bars: top exporters shown as horizontal bars with width proportional to market share %, colored by geopolitical risk
+- [ ] **PRDV-08**: Product page flag badges displayed below product name — EU CRM listed (with year), energy, pharma, semiconductor, strategic mineral — sourced from flags column
+- [ ] **PRDV-09**: Remove dash-cytoscape force-directed network graph from product page and requirements (VIZZ-06 superseded); Sankey diagram remains as primary flow visualization
+
+### Time Series (v2.0)
+
+- [ ] **TIME-04**: Score trend chart updated to display substitutability_score (was essentiality_score), with correct axis label and methodology tooltip
+- [ ] **TIME-05**: Year sparklines in AG Grid product tables using custom clientside JS SVG cellRenderer (6-point polyline, 60×20px) — not AG Grid Enterprise sparklineOptions
+
+### Dashboard Shell (v2.0)
+
+- [ ] **DASH-06**: All "essentiality" terminology replaced with "substitutability" across dashboard UI, weight sliders, chart labels, and methodology page explanation text

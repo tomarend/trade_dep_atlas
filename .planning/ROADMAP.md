@@ -134,6 +134,63 @@ Plans:
 - [ ] 06-02-PLAN.md — Trend line charts in country drill-down + product page with toggleable sub-scores
 - [ ] 06-03-PLAN.md — Sankey flow diagram + force-directed network graph on product page
 
+
+---
+
+## v2.0 Milestone: Dashboard Redesign
+
+Phases 7–9 continue from v1 execution order. Each phase builds on prior output.
+v2.0 goal: empirical scoring, lean data pipeline, insight-first visualization.
+
+- [ ] **Phase 7: Pipeline & Scoring Rework** - Replace tier scoring with global_export_hhi, slim BACI download to HS92+HS22, rebuild DuckDB schema
+- [ ] **Phase 8: Dashboard Redesign** - Country page hero/scatter/bilateral, product page concentration bars/flags, remove network graph
+- [ ] **Phase 9: Time Series** - Update trend charts for substitutability, add sparklines via custom SVG cellRenderer
+
+### Phase 7: Pipeline & Scoring Rework
+**Goal**: Pipeline downloads only HS92 + HS22 data, scoring uses empirical global_export_hhi as substitutability proxy, and DuckDB schema is fully updated with no tier columns
+**Depends on**: Phase 5 (completed v1 codebase)
+**Requirements**: DATA-06, DATA-07, SCOR-06, SCOR-07, SCOR-08
+**Success Criteria** (what must be TRUE):
+  1. Running the download step fetches only HS92 and HS22 files (~17GB total, not ~45GB)
+  2. pipeline/flags.py produces a `flags` list per product; no essentiality_tier or essentiality_score in any pipeline output
+  3. Composite score formula uses `w3 * global_export_hhi` as third component; weights still sum to 1.0 and can be adjusted
+  4. DuckDB products dim has `flags` LIST column and `global_export_hhi`; dependency_scores has `substitutability_score`; no essentiality_tier column
+  5. Full pipeline run completes end-to-end and dashboard launches without ColumnNotFound errors
+**Plans**: TBD
+
+Plans:
+- [ ] 07-01-PLAN.md — TBD
+
+### Phase 8: Dashboard Redesign
+**Goal**: Country page is insight-first with hero cards, scatter plot, and bilateral risk panel; product page has concentration bars and flag badges; network graph removed; all "essentiality" labels replaced
+**Depends on**: Phase 7
+**Requirements**: CNTV-08, CNTV-09, CNTV-10, CNTV-11, PRDV-07, PRDV-08, PRDV-09, DASH-06
+**Success Criteria** (what must be TRUE):
+  1. Country page: 4 hero stat cards visible above the fold with correct values from DuckDB
+  2. Country page: scatter plot renders top-200 products with HHI (x) vs substitutability (y), sized by import value
+  3. Country page: bilateral risk panel shows top-10 source countries as horizontal bars, ranked by weighted risk contribution
+  4. Product page: concentration bar chart renders top exporters with share % bars colored by geo risk
+  5. Product page: flag badges displayed for applicable products (EU CRM, energy, pharma, etc.)
+  6. Network graph and dash-cytoscape removed; no import errors on startup
+  7. Zero occurrences of "essentiality" in UI-visible text (slider labels, chart titles, cards)
+**Plans**: TBD
+
+Plans:
+- [ ] 08-01-PLAN.md — TBD
+
+### Phase 9: Time Series
+**Goal**: Score trend charts show substitutability instead of essentiality, and AG Grid product tables have year sparklines
+**Depends on**: Phase 8
+**Requirements**: TIME-04, TIME-05
+**Success Criteria** (what must be TRUE):
+  1. Score trend line chart labels and tooltip show "Substitutability" not "Essentiality"
+  2. AG Grid product tables have a "Trend" column with SVG sparklines (6 data points, 60×20px)
+  3. Sparklines render without AG Grid Enterprise errors in browser console
+**Plans**: TBD
+
+Plans:
+- [ ] 09-01-PLAN.md — TBD
+
 ## Progress
 
 **Execution Order:**
@@ -148,6 +205,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6
 | 4.1 Data Quality Fixes | 1/1 | Complete | - |
 | 5. Product→Countries View & Cross-Linking | 0/3 | Planned | - |
 | 6. Time Series & Advanced Visualizations | 0/3 | Not started | - |
+
+| 7. Pipeline & Scoring Rework | TBD | Not started | - |
+| 8. Dashboard Redesign | TBD | Not started | - |
+| 9. Time Series (v2) | TBD | Not started | - |
 
 ---
 *Roadmap created: 2026-03-17*
