@@ -44,7 +44,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Time Series
 
-- [ ] **TIME-01**: User can select a year via slider or dropdown to view dependency scores for that year
+- [x] **TIME-01**: User can select a year via slider or dropdown to view dependency scores for that year
 - [ ] **TIME-02**: User can see line charts showing how dependency scores evolve over ~20 years for a country-product pair
 - [ ] **TIME-03**: Time series handles missing data gracefully (gaps in BACI coverage)
 
@@ -131,7 +131,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRDV-04 | Phase 5 | Pending |
 | PRDV-05 | Phase 5 | Pending |
 | PRDV-06 | Phase 5 | Pending |
-| TIME-01 | Phase 6 | Pending |
+| TIME-01 | Phase 6 | Complete |
 | TIME-02 | Phase 6 | Pending |
 | TIME-03 | Phase 6 | Pending |
 | VIZZ-01 | Phase 4 | Pending |
