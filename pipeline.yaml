@@ -21,4 +21,4 @@ scoring:
   weights:
     hhi: 0.35
     geo_risk: 0.35
-    essentiality: 0.30
+    substitutability: 0.30

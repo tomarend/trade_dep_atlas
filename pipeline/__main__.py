@@ -12,7 +12,7 @@ from loguru import logger
 from pipeline.concordance import load_concordance, validate_concordance
 from pipeline.composite import run_composite_scoring
 from pipeline.download import download_baci
-from pipeline.essentiality import run_essentiality_scoring
+from pipeline.flags import run_flags_scoring
 from pipeline.export import run_duckdb_export
 from pipeline.georisk import run_georisk_scoring
 from pipeline.hhi import run_hhi_scoring
@@ -132,10 +132,10 @@ def main(config_path: Path | None = None, skip_download: bool = False, skip_scor
         georisk_result = run_georisk_scoring(config)
         scoring_summary["georisk"] = georisk_result
 
-        # Stage 6: Essentiality scoring
-        logger.info("Stage 6: Computing product essentiality scores...")
-        ess_result = run_essentiality_scoring(config)
-        scoring_summary["essentiality"] = ess_result
+        # Stage 6: Product flags and global HHI
+        logger.info("Stage 6: Computing product flags and global export HHI...")
+        ess_result = run_flags_scoring(config)
+        scoring_summary["flags"] = ess_result
 
         # Stage 7: Composite + DuckDB export
         logger.info("Stage 7a: Computing composite dependency scores...")

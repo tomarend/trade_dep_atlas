@@ -21,7 +21,7 @@ def build_duckdb(
     duckdb_path: str | Path,
     composite_dir: Path,
     georisk_path: Path,
-    essentiality_path: Path,
+    flags_path: Path,
     reference_dir: Path,
     raw_dir: Path | None = None,
 ) -> None:
@@ -34,7 +34,7 @@ def build_duckdb(
         composite_dir: Root of composite Parquet output (data/scoring/composite/)
         georisk_path: Path to georisk_by_country_year.parquet (unused at table level;
                       geo_risk per exporter is embedded in the fact table via composite.py)
-        essentiality_path: Path to essentiality_scores.parquet (source for products dim)
+        flags_path: Path to flags_scores.parquet (source for products dim)
         reference_dir: Pipeline reference dir (for country mapping and product descriptions)
     """
     duckdb_path = Path(duckdb_path)
@@ -58,8 +58,10 @@ def build_duckdb(
                 hhi,
                 exporter_geo_risk,
                 basket_geo_risk,
-                essentiality_score,
-                essentiality_tier,
+                global_export_hhi,
+                substitutability_score,
+                flags,
+                hs22_only,
                 crm_listed_since,
                 composite_score
             FROM read_parquet('{composite_glob}', hive_partitioning = true)
@@ -105,7 +107,7 @@ def build_duckdb(
 
         # ── Dimension table: products ───────────────────────────────────────
         logger.info("DuckDB: building products dimension table...")
-        ess_df = pl.read_parquet(essentiality_path)
+        flags_df = pl.read_parquet(flags_path)
 
         from pipeline.concordance import load_product_descriptions
 
@@ -115,9 +117,9 @@ def build_duckdb(
                 [{"hs6": k, "description": v[0]} for k, v in descriptions.items()],
                 schema={"hs6": pl.Utf8, "description": pl.Utf8},
             )
-            products_df = ess_df.join(desc_df, on="hs6", how="left")
+            products_df = flags_df.join(desc_df, on="hs6", how="left")
         else:
-            products_df = ess_df.with_columns(pl.lit("").alias("description"))
+            products_df = flags_df.with_columns(pl.lit("").alias("description"))
 
         products_df = products_df.with_columns([
             pl.col("hs6").str.slice(0, 2).alias("hs2"),
@@ -126,10 +128,9 @@ def build_duckdb(
             pl.col("crm_listed_since").cast(pl.Int64, strict=False),
         ]).select([
             "hs6", "hs2", "hs4", "description",
-            pl.col("category").alias("essentiality_category"),
-            "essentiality_tier",
-            "essentiality_score",
+            "flags",
             "global_export_hhi",
+            "hs22_only",
             "crm_listed_since",
         ])
 
@@ -137,8 +138,7 @@ def build_duckdb(
         conn.register("_products", products_df.to_arrow())
         conn.execute("""
             CREATE TABLE products AS
-            SELECT hs6, hs2, hs4, description, essentiality_category,
-                   essentiality_tier, essentiality_score, global_export_hhi, crm_listed_since
+            SELECT hs6, hs2, hs4, description, flags, global_export_hhi, hs22_only, crm_listed_since
             FROM _products
         """)
         conn.unregister("_products")
@@ -158,7 +158,7 @@ def run_duckdb_export(config: dict) -> dict:
 
     composite_dir = scoring_dir / "composite"
     georisk_path = scoring_dir / "georisk" / "georisk_by_country_year.parquet"
-    essentiality_path = scoring_dir / "essentiality" / "essentiality_scores.parquet"
+    flags_path = scoring_dir / "flags" / "flags_scores.parquet"
 
     if not composite_dir.exists():
         raise FileNotFoundError(
@@ -168,7 +168,7 @@ def run_duckdb_export(config: dict) -> dict:
     raw_dir = Path(config["baci"]["raw_dir"])
 
     start = time.time()
-    build_duckdb(duckdb_path, composite_dir, georisk_path, essentiality_path, reference_dir, raw_dir=raw_dir)
+    build_duckdb(duckdb_path, composite_dir, georisk_path, flags_path, reference_dir, raw_dir=raw_dir)
     duration = round(time.time() - start, 2)
     logger.info(f"DuckDB export complete in {duration}s → {duckdb_path}")
     return {"duckdb_path": str(duckdb_path), "duration_seconds": duration}
