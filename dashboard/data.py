@@ -342,3 +342,74 @@ def get_product_summary(hs6: str, year: int | None = None) -> dict:
         "avg_hhi": 0, "avg_geo_risk": 0, "avg_essentiality": 0,
         "avg_composite": 0, "importer_count": 0, "high_risk_count": 0,
     }
+
+
+
+# ---------------------------------------------------------------------------
+# Parameterized queries for Phase 6: Time Series & Advanced Visualizations
+# ---------------------------------------------------------------------------
+
+
+def get_score_trend(importer_iso3: str, hs6: str) -> list[dict]:
+    """Return time series of scores across all years for a specific importer-product pair."""
+    if _conn is None:
+        return []
+    try:
+        rows = _conn.execute(
+            """
+            SELECT DISTINCT year, composite_score, hhi, basket_geo_risk, essentiality_score
+            FROM dependency_scores
+            WHERE importer_iso3 = ? AND hs6 = ?
+            ORDER BY year
+            """,
+            [importer_iso3, hs6],
+        ).fetchall()
+        cols = ["year", "composite_score", "hhi", "basket_geo_risk", "essentiality_score"]
+        return [
+            {
+                c: (round(v, 4) if isinstance(v, float) else v)
+                for c, v in zip(cols, row)
+            }
+            for row in rows
+        ]
+    except Exception as exc:
+        logger.error("get_score_trend query failed: {}", exc)
+    return []
+
+
+def get_trade_flows(hs6: str, year: int | None = None) -> list[dict]:
+    """Return exporter->importer trade flows for Sankey/network visualizations."""
+    if _conn is None:
+        return []
+    yr = year or get_year_range()[1]
+    try:
+        rows = _conn.execute(
+            """
+            SELECT
+                ds.exporter_iso3,
+                COALESCE(ce.name, ds.exporter_iso3) AS exporter_name,
+                ds.importer_iso3,
+                COALESCE(ci.name, ds.importer_iso3) AS importer_name,
+                ds.value_usd,
+                ds.supplier_share,
+                ds.exporter_geo_risk
+            FROM dependency_scores ds
+            LEFT JOIN countries ce ON ds.exporter_iso3 = ce.iso3
+            LEFT JOIN countries ci ON ds.importer_iso3 = ci.iso3
+            WHERE ds.hs6 = ? AND ds.year = ?
+            ORDER BY ds.value_usd DESC
+            """,
+            [hs6, yr],
+        ).fetchall()
+        cols = ["exporter_iso3", "exporter_name", "importer_iso3", "importer_name",
+                "value_usd", "supplier_share", "exporter_geo_risk"]
+        return [
+            {
+                c: (round(v, 4) if isinstance(v, float) else v)
+                for c, v in zip(cols, row)
+            }
+            for row in rows
+        ]
+    except Exception as exc:
+        logger.error("get_trade_flows query failed: {}", exc)
+    return []

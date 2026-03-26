@@ -2,12 +2,13 @@
 
 import dash
 import dash_bootstrap_components as dbc
-from dash import dcc, html
+from dash import clientside_callback, dcc, html, Input, Output
 
 from dashboard import data
 
 
 def _build_sidebar() -> dbc.Col:
+    min_year, max_year = data.get_year_range()
     return dbc.Col(
         [
             html.Div(
@@ -30,6 +31,23 @@ def _build_sidebar() -> dbc.Col:
                 vertical=True,
                 pills=True,
             ),
+            html.Hr(className="sidebar-divider"),
+            html.Div([
+                html.P([
+                    "Viewing: ",
+                    html.Strong(str(max_year), id="year-label"),
+                ], className="year-display mb-1 small text-muted"),
+                dcc.Slider(
+                    id="year-slider",
+                    min=min_year,
+                    max=max_year,
+                    value=max_year,
+                    step=1,
+                    marks={y: str(y) for y in range(min_year, max_year + 1, 5)},
+                    tooltip={"placement": "bottom"},
+                    updatemode="mouseup",
+                ),
+            ], className="year-slider-wrap px-3"),
         ],
         id="sidebar",
         width=2,
@@ -64,12 +82,14 @@ def _offline_banner() -> dbc.Alert:
 
 
 def create_layout() -> dbc.Container:
+    _, max_year = data.get_year_range()
     page_children = [dash.page_container]
     if not data.db_available:
         page_children = [_offline_banner()] + page_children
     return dbc.Container(
         [
             dcc.Location(id="url", refresh=False),
+            dcc.Store(id="year-store", data=max_year, storage_type="session"),
             dbc.Row(
                 [
                     _build_sidebar(),
@@ -81,3 +101,11 @@ def create_layout() -> dbc.Container:
         ],
         fluid=True,
     )
+
+
+# Sync slider -> store + label (clientside for instant feel)
+clientside_callback(
+    "function(year) { return [year, String(year)]; }",
+    [Output("year-store", "data"), Output("year-label", "children")],
+    Input("year-slider", "value"),
+)

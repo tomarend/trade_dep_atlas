@@ -331,3 +331,14 @@ body {
 .score-value { font-weight: 700; }
 .drilldown-panel { padding: 0.5rem 0; }
 .drilldown-header { font-weight: 600; margin-bottom: 1rem; border-left: 3px solid #2563eb; padding-left: 0.75rem; }
+
+
+/* ── Phase 6: Year slider ─────────────────────────────────────────── */
+.sidebar-divider { border-color: #334155; margin: 0.75rem 1rem 0.5rem; }
+.year-slider-wrap { margin-top: 0.25rem; }
+.year-display { color: #94a3b8 !important; letter-spacing: 0.3px; }
+.year-display strong { color: #f8fafc; font-weight: 700; }
+#year-slider .rc-slider-rail { background-color: #334155; }
+#year-slider .rc-slider-track { background-color: #3b82f6; }
+#year-slider .rc-slider-handle { border-color: #3b82f6; background-color: #f8fafc; }
+#year-slider .rc-slider-mark-text { color: #64748b; font-size: 0.65rem; }
