@@ -23,6 +23,7 @@ def build_duckdb(
     georisk_path: Path,
     essentiality_path: Path,
     reference_dir: Path,
+    raw_dir: Path | None = None,
 ) -> None:
     """Create star-schema DuckDB database from scored Parquet intermediates.
 
@@ -70,7 +71,7 @@ def build_duckdb(
         logger.info("DuckDB: building countries dimension table...")
         from pipeline.countries import load_country_mapping
 
-        country_mapping = load_country_mapping(reference_dir)
+        country_mapping = load_country_mapping(reference_dir, raw_dir=raw_dir)
         country_rows = [
             {
                 "iso3": rec.iso3,
@@ -108,7 +109,7 @@ def build_duckdb(
 
         from pipeline.concordance import load_product_descriptions
 
-        descriptions = load_product_descriptions(reference_dir)
+        descriptions = load_product_descriptions(reference_dir, raw_dir=raw_dir)
         if descriptions:
             desc_df = pl.DataFrame(
                 [{"hs6": k, "description": v[0]} for k, v in descriptions.items()],
@@ -143,13 +144,9 @@ def build_duckdb(
         conn.unregister("_products")
         logger.info(f"DuckDB: {len(products_df):,} rows in products")
 
-        # ── Indexes for <50ms queries ───────────────────────────────────────
-        logger.info("DuckDB: creating indexes...")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_ds_importer ON dependency_scores (importer_iso3)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_ds_hs6 ON dependency_scores (hs6)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_ds_year ON dependency_scores (year)")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_ds_importer_hs6_year ON dependency_scores (importer_iso3, hs6, year)")
-
+        # DuckDB's columnar storage + zone maps already gives fast analytical
+        # queries without explicit B-tree indexes.  Indexes on 300M+ rows are
+        # extremely slow to build and provide negligible benefit for OLAP.
         logger.info(f"DuckDB build complete: {duckdb_path}")
 
 
@@ -168,8 +165,10 @@ def run_duckdb_export(config: dict) -> dict:
             f"Composite scoring output not found: {composite_dir}. Run composite scoring first."
         )
 
+    raw_dir = Path(config["baci"]["raw_dir"])
+
     start = time.time()
-    build_duckdb(duckdb_path, composite_dir, georisk_path, essentiality_path, reference_dir)
+    build_duckdb(duckdb_path, composite_dir, georisk_path, essentiality_path, reference_dir, raw_dir=raw_dir)
     duration = round(time.time() - start, 2)
     logger.info(f"DuckDB export complete in {duration}s → {duckdb_path}")
     return {"duckdb_path": str(duckdb_path), "duration_seconds": duration}

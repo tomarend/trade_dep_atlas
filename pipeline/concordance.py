@@ -31,10 +31,37 @@ class Concordance:
     target_revision: str = "H6"
 
 
-def load_product_descriptions(reference_dir: Path) -> dict[str, tuple[str, str]]:
-    """Read hs_product_descriptions.csv. Returns hs6 → (description, category)."""
+def load_product_descriptions(reference_dir: Path, raw_dir: Path | None = None) -> dict[str, tuple[str, str]]:
+    """Read product descriptions. Returns hs6 → (description, category).
+
+    When raw_dir is provided, attempts to load from BACI-bundled product_codes_HS22_V*.csv
+    (or any product_codes_HS*_V*.csv) first. Falls through to hs_product_descriptions.csv
+    if no BACI file is found.
+    """
+    if raw_dir is not None:
+        # Try HS22 first (most current), then any HS revision
+        baci_files = sorted(raw_dir.glob("product_codes_HS22_V*.csv"))
+        if not baci_files:
+            baci_files = sorted(raw_dir.glob("product_codes_HS*_V*.csv"))
+        if baci_files:
+            baci_path = baci_files[-1]  # latest version
+            descriptions: dict[str, tuple[str, str]] = {}
+            with open(baci_path, newline="", encoding="utf-8-sig") as f:
+                reader = csv.DictReader(f)
+                for row in reader:
+                    # BACI columns: "code" or "product_code", "description"
+                    raw_code = row.get("code", row.get("product_code", "")).strip()
+                    if not raw_code:
+                        continue
+                    code = str(raw_code).zfill(6)
+                    desc = row.get("description", "").strip()
+                    descriptions[code] = (desc, "")
+            logger.info(f"Loaded {len(descriptions)} product descriptions from {baci_path.name}")
+            return descriptions
+
+    # Fall back to hs_product_descriptions.csv
     desc_path = reference_dir / "hs_product_descriptions.csv"
-    descriptions: dict[str, tuple[str, str]] = {}
+    descriptions = {}
 
     if not desc_path.exists():
         logger.warning(f"Product descriptions file not found: {desc_path}")

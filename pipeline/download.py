@@ -37,8 +37,12 @@ def discover_baci_urls(download_page_url: str) -> list[dict]:
     pattern = r'href=["\']([^"\']*BACI_HS\d+_V\d+[^"\']*\.(?:csv|zip))["\']'
     matches = re.findall(pattern, html, re.IGNORECASE)
 
-    urls = []
+    all_entries = []
     for match in matches:
+        # Skip archive URLs — CEPII lists older vintages in an archives section
+        if re.search(r"/archives?/", match, re.IGNORECASE):
+            continue
+
         # Make absolute URL if relative
         if match.startswith("http"):
             url = match
@@ -54,13 +58,39 @@ def discover_baci_urls(download_page_url: str) -> list[dict]:
             url = f"{base}/{match}"
 
         filename = url.rsplit("/", 1)[-1]
+
+        # Skip if the path segment above the filename looks like an archive directory
+        path_before_file = url[: url.rfind("/")]
+        if re.search(r"/archives?$", path_before_file, re.IGNORECASE):
+            continue
+
         # Extract HS revision from filename
         hs_match = re.search(r"HS(\d+)", filename)
         hs_revision = f"H{hs_match.group(1)}" if hs_match else "unknown"
 
-        urls.append({"url": url, "filename": filename, "hs_revision": hs_revision})
+        # Extract vintage version number for deduplication (e.g. V202401 → 202401)
+        v_match = re.search(r"_V(\d+)", filename, re.IGNORECASE)
+        version = int(v_match.group(1)) if v_match else 0
 
-    logger.info(f"Discovered {len(urls)} BACI data file URLs")
+        all_entries.append({"url": url, "filename": filename, "hs_revision": hs_revision, "_version": version})
+
+    # Keep only the latest vintage per HS revision — discard older archived vintages
+    latest_by_revision: dict[str, dict] = {}
+    for entry in all_entries:
+        rev = entry["hs_revision"]
+        if rev not in latest_by_revision or entry["_version"] > latest_by_revision[rev]["_version"]:
+            latest_by_revision[rev] = entry
+
+    urls = [
+        {"url": e["url"], "filename": e["filename"], "hs_revision": e["hs_revision"]}
+        for e in latest_by_revision.values()
+    ]
+    urls = [u for u in urls if u["hs_revision"] in {"H92", "H22"}]
+
+    logger.info(
+        f"Discovered {len(urls)} BACI data file URLs "
+        f"(latest vintage per HS revision, from {len(all_entries)} candidate links)"
+    )
     return urls
 
 

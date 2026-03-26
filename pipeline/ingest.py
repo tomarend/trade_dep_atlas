@@ -1,5 +1,6 @@
 """Core ingestion pipeline: raw BACI CSV → cleaned, concorded, country-mapped Parquet."""
 
+import re
 import time
 from pathlib import Path
 
@@ -129,13 +130,16 @@ def run_ingestion(config: dict) -> dict:
     start_time = time.time()
 
     # Load reference data
-    country_mapping = load_country_mapping(reference_dir)
+    country_mapping = load_country_mapping(reference_dir, raw_dir=raw_dir)
     concordance = load_concordance(reference_dir)
     concordance_map = build_concordance_polars_map(concordance)
-    descriptions = load_product_descriptions(reference_dir)
+    descriptions = load_product_descriptions(reference_dir, raw_dir=raw_dir)
 
-    # Find all CSVs in raw_dir
-    csv_files = sorted(raw_dir.glob("*.csv"))
+    # Find all CSVs in raw_dir — HS22 processed first to enable overlap-year skipping
+    csv_files = sorted(
+        raw_dir.glob("*.csv"),
+        key=lambda p: (0 if re.search(r"BACI_HS22_", p.name, re.IGNORECASE) else 1, p.name),
+    )
     if not csv_files:
         logger.warning(f"No CSV files found in {raw_dir}")
         return {"years_processed": [], "years_skipped": [], "total_rows": 0, "duration_seconds": 0}
@@ -143,8 +147,13 @@ def run_ingestion(config: dict) -> dict:
     years_processed = []
     years_skipped = []
     total_rows = 0
+    hs22_years: set[int] = set()  # years already covered by HS22 data
 
     for csv_path in csv_files:
+        # Skip non-trade mapping files bundled in raw_dir
+        if csv_path.name.startswith(("country_codes", "product_codes")):
+            continue
+
         # Extract year from first data row
         try:
             sample = pl.read_csv(csv_path, n_rows=1)
@@ -167,6 +176,16 @@ def run_ingestion(config: dict) -> dict:
                 years_skipped.append(year)
                 continue
 
+        # Detect HS revision from filename
+        hs_rev_match = re.search(r"BACI_(HS\d+)_", csv_path.name, re.IGNORECASE)
+        hs_revision = hs_rev_match.group(1).upper() if hs_rev_match else "HS92"
+
+        # HS22 wins for 2022-2024: skip non-HS22 if HS22 already processed this year
+        if year in {2022, 2023, 2024} and hs_revision != "HS22" and year in hs22_years:
+            logger.info(f"Skipping {csv_path.name} — HS22 already covers year {year}")
+            years_skipped.append(year)
+            continue
+
         logger.info(f"Ingesting year {year} from {csv_path.name}")
         year_start = time.time()
 
@@ -181,6 +200,9 @@ def run_ingestion(config: dict) -> dict:
         elapsed = time.time() - year_start
         logger.info(f"Year {year}: {row_count:,} rows in {elapsed:.1f}s → {parquet_path}")
         years_processed.append(year)
+
+        if hs_revision == "HS22" and year in {2022, 2023, 2024}:
+            hs22_years.add(year)
 
     duration = time.time() - start_time
     logger.info(f"Ingestion complete: {len(years_processed)} years, {total_rows:,} rows in {duration:.1f}s")
