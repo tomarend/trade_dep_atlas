@@ -265,21 +265,23 @@ def update_hs6_options(hs4):
 
 @callback(
     Output("product-data-store", "data"),
-    Input("product-hs6-selector", "value"),
+    [Input("product-hs6-selector", "value"),
+     Input("year-store", "data")],
 )
-def load_product_data(hs6):
-    """Load importer scores for the selected product into the store."""
+def load_product_data(hs6, year):
+    """Load importer scores for the selected product and year into the store."""
     if not hs6:
         return no_update
-    return data.get_importer_scores(hs6)
+    return data.get_importer_scores(hs6, year=year)
 
 
 @callback(
     Output("product-summary-cards", "children"),
     Input("product-data-store", "data"),
-    State("product-hs6-selector", "value"),
+    [State("product-hs6-selector", "value"),
+     State("year-store", "data")],
 )
-def update_product_summary(importer_data, hs6):
+def update_product_summary(importer_data, hs6, year):
     """Render summary cards and radar chart for the selected product."""
     if not importer_data or not hs6:
         return html.Div(
@@ -287,7 +289,7 @@ def update_product_summary(importer_data, hs6):
             className="text-muted p-3",
         )
 
-    summary = data.get_product_summary(hs6)
+    summary = data.get_product_summary(hs6, year=year)
 
     avg_composite = summary["avg_composite"]
     level = "high" if avg_composite > 0.7 else "medium" if avg_composite > 0.4 else "low"

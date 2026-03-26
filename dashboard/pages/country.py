@@ -261,13 +261,14 @@ clientside_callback(
 
 @callback(
     Output("country-data-store", "data"),
-    Input("country-selector", "value"),
+    [Input("country-selector", "value"),
+     Input("year-store", "data")],
 )
-def load_country_data(country_iso3):
-    """Load product scores for the selected country into the client-side store."""
+def load_country_data(country_iso3, year):
+    """Load product scores for the selected country and year into the client-side store."""
     if not country_iso3:
         return no_update
-    return data.get_product_scores(country_iso3)
+    return data.get_product_scores(country_iso3, year=year)
 
 
 @callback(
@@ -383,9 +384,10 @@ def update_product_table(products, w_hhi, w_geo, w_ess):
     [State("country-selector", "value"),
      State("weight-hhi", "value"),
      State("weight-geo", "value"),
-     State("weight-ess", "value")],
+     State("weight-ess", "value"),
+     State("year-store", "data")],
 )
-def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess):
+def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
     """Render drill-down panel when a product row is selected."""
     if not selected_rows or not country_iso3:
         return html.Div()
@@ -394,7 +396,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess):
     hs6 = product["hs6"]
     description = product.get("description", hs6)
 
-    suppliers = data.get_supplier_breakdown(country_iso3, hs6)
+    suppliers = data.get_supplier_breakdown(country_iso3, hs6, year=year)
     if not suppliers:
         return dbc.Alert(f"No supplier data available for {hs6}.", color="warning")
 
