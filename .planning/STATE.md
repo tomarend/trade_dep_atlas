@@ -1,81 +1,56 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: planning
-stopped_at: Phase 6 planned — 3 plans across 3 waves, ready to execute
-last_updated: "2026-03-26T15:14:55.990Z"
-last_activity: 2026-03-23 — Phase 5 executed (3 plans, 3 waves)
+milestone: v2.0
+milestone_name: Dashboard Redesign
+status: defining-requirements
+stopped_at: Milestone v2.0 started — defining requirements
+last_updated: "2026-03-26"
+last_activity: 2026-03-26 — Milestone v2.0 started
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 21
-  completed_plans: 21
-  percent: 83
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-17)
+See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Instantly reveal which products make a country vulnerable due to concentrated, geopolitically risky import sources — and how that exposure has evolved over time.
-**Current focus:** Phase 6: Time Series & Advanced Visualizations
+**Current focus:** v2.0 — Pipeline + scoring rework, dashboard redesign, time series
 
 ## Current Position
 
-Phase: 5 of 6 COMPLETE (Product->Countries View & Cross-Linking)
-Next: Phase 6 (Time Series & Advanced Visualizations)
-Status: Ready to plan Phase 6
-Last activity: 2026-03-23 — Phase 5 executed (3 plans, 3 waves)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements for v2.0
+Last activity: 2026-03-26 — Milestone v2.0 started
 
-Progress: [████████░░] 83%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: 0 hours
-
-**By Phase:**
+- Total plans complet- Total plans complet- Total plans compxecuti- Total plans comp**By - Tot:**
 
 | Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
-
-**Recent Trend:**
-- Last 5 plans: —
+|---|---|---|---|---|---|---|-----|---|---|---|---|---|---|---|-----|---|---|---|---|---|---�
 - Trend: —
 
-*Updated after each plan completion*
+*Updated after*Updated after*Updated after*Updated after*Updated  Decisions
 
-## Accumulated Context
 
-### Decisions
-
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Roadmap]: 6 phases derived from 37 requirements — pipeline strictly sequential (1→2→3), views sequential (4→5) due to shared components, advanced viz last (6)
-- [Roadmap]: SCOR-05 (weight adjustment) placed in Phase 4 (Country View) where scores first appear in UI, not in scoring pipeline
-- [Roadmap]: CNTV-07 and PRDV-06 (cross-linking) both in Phase 5 since both views must exist for cross-linking to work
-- [Roadmap]: VIZZ-06 (network graph) kept in v1 despite research suggesting deferral — user included it in requirements
-
-### Pending Todos
-
-None yet.
-
-### Blockers/Concerns
-
-- CEPII site returned 500 errors during research — BACI download mechanics need verification in Phase 1
-- HS concordance table source/format needs validation — many-to-many mappings require clear aggregation strategy
-- Governance index coverage gaps (Taiwan, Kosovo, Palestine) need explicit decisions in Phase 2
-- EU CRM list covers ~34 materials not HS6 codes — CRM→HS6 mapping needs manual curation in Phase 2
+Updated after*UciUpdated after*Uring]: Updatee deterministic tier system (critical/important/standard) with fullUpdated after*UciUpHHIUpdated after*UciUpdated after*Uring]: UpdatelitUpdated after*UciUpdated after*Uring]: Updatee deterministic tier system (critical/important/standard) with fullUpdated after*UciUpHHIUpdated after*UciUpdated after*Uring]: Updat 5Updated after*UciUpdated after*Uring]: Updatee deterministic tier system (critical/imy_cUpdated after*UciUad of hand-built reference files
+- [Data]: HS2- [Data]te- [Data]: HS2- [Data]te- [Data]: series (cross-year comparability with footnote)
+- [Dashboard- [Dashboard- [Dashboard- [Dashboard- [Dashbut - [Dashboard- [Dashbo de- [Dashboardbo- [Dashboard- [Dashboard- [Dashboard- [Dashboard- [Dashbut - [Dashboard- [Dashbo de- [Dashboardbhip- [Dashboard- [Dashboard- [Dashboonce- [Dashboard- [Dashboard- [Dashboard- [Dashboard- [Dashbut - [Dashboard- [Dashbo de- [Dashboer- [Dashboacus), drop network graph (low insight density)
+- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter since both views must exi- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concentr- [Viz]: Add scatter plot, concesearch — BACI download mechanics need verification
+- Governance index coverage gaps (Taiwan, Kosovo, Palestine) — handled in v1 with manual overrides, carry forward
 
 ## Session Continuity
 
-Last session: 2026-03-26T14:54:31.125Z
-Stopped at: Phase 6 planned — 3 plans across 3 waves, ready to execute
-Resume file: None
+Last session: 2026-03-26
+Stopped at: Milestone v2.0 started — defining requirements
