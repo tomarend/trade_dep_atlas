@@ -1,0 +1,57 @@
+# Product classification flags — Phase 7 v2.0
+# Replaces essentiality_config.yaml (deleted by Plan 07-03).
+# 8 canonical flags. set_programmatically: true means the flag is not driven by YAML rules.
+# Rule evaluation order: hs6_exclude/hs4_exclude take precedence over any include rule.
+# Each flag is independent — a product can have multiple flags.
+
+crm_listed:
+  description: "EU CRM 2023 / USGS Critical Minerals 2022 list"
+  set_programmatically: true  # driven by crm_hs6_mapping.csv, not yaml rules
+
+energy:
+  description: "Mineral fuels, oils, gas, coal (HS chapter 27 excluding electric current)"
+  hs2_include: ["27"]
+  hs4_exclude: ["2716"]  # 2716 = electric energy (not a physical scarce commodity)
+
+fertilizer:
+  description: "Nitrogen/phosphorus/potassium fertilizers and mineral nutrients (HS chapter 31)"
+  hs2_include: ["31"]
+
+food:
+  description: "Live animals, food and agricultural products (HS chapters 01-24)"
+  hs2_include:
+    ["01","02","03","04","05","06","07","08","09","10","11","12",
+     "13","14","15","16","17","18","19","20","21","22","23","24"]
+
+pharma:
+  description: "Pharmaceutical active ingredients (HS29) and finished medicines (HS30)"
+  hs2_include: ["29", "30"]
+
+semiconductor:
+  description: "Key semiconductor fabrication materials not covered by CRM list"
+  hs6_include:
+    - "280469"   # Silicon (other) — semiconductor grade
+    - "280470"   # Silicon (other form) — solar/semiconductor
+    - "284961"   # Germanium oxides / germanium dioxide
+    - "284969"   # Germanium and articles thereof
+    - "284910"   # Fluorides (HF used in chip fab)
+    - "811292"   # Unwrought indium (transparent displays)
+    - "811299"   # Indium articles (ITO for displays)
+    - "284490"   # Radioactive isotopes
+    - "280610"   # Chlorine gas (semiconductor cleaning)
+    - "284630"   # Europium (phosphors for displays/LEDs)
+
+strategic_mineral:
+  description: "Strategic mining ores not individually listed on CRM but geopolitically significant"
+  hs4_include:
+    - "2602"   # manganese ores
+    - "2604"   # nickel ores
+    - "2606"   # aluminium ores (bauxite)
+    - "2609"   # tin ores
+    - "2610"   # chromium ores
+    - "2615"   # niobium, tantalum, vanadium ores
+    - "2617"   # antimony ores
+
+hs22_only:
+  description: "Product code introduced in HS2022 revision — no pre-2022 time series available"
+  set_programmatically: true  # set by run_flags_scoring() from HS22/HS92 product code diff
