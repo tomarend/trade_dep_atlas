@@ -506,6 +506,64 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
         showlegend=False,
     )
 
+    # -- Trend Chart --
+    trend_data = data.get_score_trend(country_iso3, hs6)
+    if trend_data:
+        min_year, max_year = data.get_year_range()
+        all_years = list(range(min_year, max_year + 1))
+        trend_by_year = {r["year"]: r for r in trend_data}
+
+        # Build series with None gaps for missing years
+        years = all_years
+        composite_vals = [trend_by_year[y]["composite_score"] if y in trend_by_year else None for y in all_years]
+        hhi_vals = [trend_by_year[y]["hhi"] if y in trend_by_year else None for y in all_years]
+        geo_vals = [trend_by_year[y]["basket_geo_risk"] if y in trend_by_year else None for y in all_years]
+        ess_vals = [trend_by_year[y]["essentiality_score"] if y in trend_by_year else None for y in all_years]
+
+        trend_fig = go.Figure()
+        trend_fig.add_trace(go.Scatter(
+            x=years, y=composite_vals, mode="lines+markers",
+            name="Composite", line=dict(color="#2563eb", width=2),
+            marker=dict(size=4), connectgaps=False,
+        ))
+        trend_fig.add_trace(go.Scatter(
+            x=years, y=hhi_vals, mode="lines",
+            name="HHI", line=dict(color="#8b5cf6", width=1.5, dash="dot"),
+            visible="legendonly", connectgaps=False,
+        ))
+        trend_fig.add_trace(go.Scatter(
+            x=years, y=geo_vals, mode="lines",
+            name="Geo Risk", line=dict(color="#dc2626", width=1.5, dash="dot"),
+            visible="legendonly", connectgaps=False,
+        ))
+        trend_fig.add_trace(go.Scatter(
+            x=years, y=ess_vals, mode="lines",
+            name="Essentiality", line=dict(color="#059669", width=1.5, dash="dot"),
+            visible="legendonly", connectgaps=False,
+        ))
+        trend_fig.add_vline(
+            x=year, line_dash="dash", line_color="gray",
+            annotation_text="Selected", annotation_position="top right",
+        )
+        trend_fig.update_layout(
+            template="plotly_white", font_family="Inter",
+            title=f"Score Trend \u2014 {hs6}",
+            xaxis_title="Year", yaxis_title="Score",
+            yaxis_range=[0, 1], height=300,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            margin=dict(l=50, r=20, t=60, b=40),
+        )
+        trend_section = dbc.Row([
+            dbc.Col([
+                html.H6("Score Trend (1995\u20132024)", className="fw-semibold mb-2"),
+                dcc.Graph(id="drilldown-trend-chart", figure=trend_fig, config={"displayModeBar": False}),
+            ], md=12),
+        ], className="g-3 mt-3")
+    else:
+        trend_section = dbc.Row([
+            dbc.Col(html.P("No historical data available.", className="text-muted"), md=12),
+        ], className="g-3 mt-3")
+
     # -- Assemble drill-down panel --
     weighted = product.get("weighted_composite", product.get("composite_score", 0))
 
@@ -550,4 +608,6 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
                 ),
             ], md=7),
         ], className="g-3 mt-3"),
+
+        trend_section,
     ], className="drilldown-panel")
