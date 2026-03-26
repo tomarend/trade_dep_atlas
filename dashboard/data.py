@@ -95,9 +95,11 @@ def get_default_product() -> str:
     if _conn is None:
         return "271019"
     try:
+        max_yr = get_year_range()[1]
         row = _conn.execute(
-            "SELECT hs6 FROM dependency_scores "
-            "GROUP BY hs6 ORDER BY AVG(composite_score) DESC LIMIT 1"
+            "SELECT hs6 FROM dependency_scores WHERE year = ? "
+            "GROUP BY hs6 ORDER BY AVG(composite_score) DESC LIMIT 1",
+            [max_yr],
         ).fetchone()
         if row:
             return str(row[0])
@@ -123,10 +125,10 @@ def get_product_scores(importer_iso3: str, year: int | None = None) -> list[dict
             SELECT DISTINCT
                 ds.hs6,
                 COALESCE(p.description, '') AS description,
-                ds.essentiality_tier,
+                COALESCE(p.flags, []) AS flags,
                 ds.hhi,
                 ds.basket_geo_risk,
-                ds.essentiality_score,
+                ds.substitutability_score,
                 ds.composite_score
             FROM dependency_scores ds
             LEFT JOIN products p ON ds.hs6 = p.hs6
@@ -135,8 +137,8 @@ def get_product_scores(importer_iso3: str, year: int | None = None) -> list[dict
             """,
             [importer_iso3, yr],
         ).fetchall()
-        cols = ["hs6", "description", "essentiality_tier", "hhi",
-                "basket_geo_risk", "essentiality_score", "composite_score"]
+        cols = ["hs6", "description", "flags", "hhi",
+                "basket_geo_risk", "substitutability_score", "composite_score"]
         return [
             {
                 c: (round(v, 4) if isinstance(v, float) else v)
@@ -153,7 +155,7 @@ def get_country_summary(importer_iso3: str, year: int | None = None) -> dict:
     """Return aggregate summary stats for the given importer and year."""
     if _conn is None:
         return {
-            "avg_hhi": 0, "avg_geo_risk": 0, "avg_essentiality": 0,
+            "avg_hhi": 0, "avg_geo_risk": 0, "avg_substitutability": 0,
             "avg_composite": 0, "product_count": 0, "critical_count": 0,
             "high_risk_count": 0,
         }
@@ -162,19 +164,21 @@ def get_country_summary(importer_iso3: str, year: int | None = None) -> dict:
         row = _conn.execute(
             """
             SELECT
-                AVG(hhi) AS avg_hhi,
-                AVG(basket_geo_risk) AS avg_geo_risk,
-                AVG(essentiality_score) AS avg_essentiality,
-                AVG(composite_score) AS avg_composite,
+                AVG(sub.hhi) AS avg_hhi,
+                AVG(sub.basket_geo_risk) AS avg_geo_risk,
+                AVG(sub.substitutability_score) AS avg_substitutability,
+                AVG(sub.composite_score) AS avg_composite,
                 COUNT(*) AS product_count,
-                SUM(CASE WHEN essentiality_tier = 'critical' THEN 1 ELSE 0 END) AS critical_count,
-                SUM(CASE WHEN composite_score > 0.7 THEN 1 ELSE 0 END) AS high_risk_count
+                SUM(CASE WHEN list_contains(p.flags, 'crm_listed')
+                              OR list_contains(p.flags, 'strategic_mineral')
+                         THEN 1 ELSE 0 END) AS critical_count,
+                SUM(CASE WHEN sub.composite_score > 0.7 THEN 1 ELSE 0 END) AS high_risk_count
             FROM (
-                SELECT DISTINCT hs6, hhi, basket_geo_risk, essentiality_score,
-                       essentiality_tier, composite_score
+                SELECT DISTINCT hs6, hhi, basket_geo_risk, substitutability_score, composite_score
                 FROM dependency_scores
                 WHERE importer_iso3 = ? AND year = ?
             ) sub
+            LEFT JOIN products p ON sub.hs6 = p.hs6
             """,
             [importer_iso3, yr],
         ).fetchone()
@@ -182,7 +186,7 @@ def get_country_summary(importer_iso3: str, year: int | None = None) -> dict:
             return {
                 "avg_hhi": round(float(row[0] or 0), 3),
                 "avg_geo_risk": round(float(row[1] or 0), 3),
-                "avg_essentiality": round(float(row[2] or 0), 3),
+                "avg_substitutability": round(float(row[2] or 0), 3),
                 "avg_composite": round(float(row[3] or 0), 3),
                 "product_count": int(row[4] or 0),
                 "critical_count": int(row[5] or 0),
@@ -191,7 +195,7 @@ def get_country_summary(importer_iso3: str, year: int | None = None) -> dict:
     except Exception as exc:
         logger.error("get_country_summary query failed: {}", exc)
     return {
-        "avg_hhi": 0, "avg_geo_risk": 0, "avg_essentiality": 0,
+        "avg_hhi": 0, "avg_geo_risk": 0, "avg_substitutability": 0,
         "avg_composite": 0, "product_count": 0, "critical_count": 0,
         "high_risk_count": 0,
     }
@@ -270,23 +274,24 @@ def get_importer_scores(hs6: str, year: int | None = None) -> list[dict]:
                 COALESCE(c.name, sub.importer_iso3) AS importer_name,
                 sub.hhi,
                 sub.basket_geo_risk,
-                sub.essentiality_score,
+                sub.substitutability_score,
                 sub.composite_score,
-                sub.essentiality_tier
+                COALESCE(p.flags, []) AS flags
             FROM (
                 SELECT DISTINCT
                     importer_iso3, hhi, basket_geo_risk,
-                    essentiality_score, composite_score, essentiality_tier
+                    substitutability_score, composite_score
                 FROM dependency_scores
                 WHERE hs6 = ? AND year = ?
             ) sub
             LEFT JOIN countries c ON sub.importer_iso3 = c.iso3
+            LEFT JOIN products p ON sub.importer_iso3 IS NOT NULL AND p.hs6 = ?
             ORDER BY sub.composite_score DESC
             """,
-            [hs6, yr],
+            [hs6, yr, hs6],
         ).fetchall()
         cols = ["importer_iso3", "importer_name", "hhi", "basket_geo_risk",
-                "essentiality_score", "composite_score", "essentiality_tier"]
+                "substitutability_score", "composite_score", "flags"]
         return [
             {
                 c: (round(v, 4) if isinstance(v, float) else v)
@@ -303,7 +308,7 @@ def get_product_summary(hs6: str, year: int | None = None) -> dict:
     """Return aggregate summary stats for the given product across all importers."""
     if _conn is None:
         return {
-            "avg_hhi": 0, "avg_geo_risk": 0, "avg_essentiality": 0,
+            "avg_hhi": 0, "avg_geo_risk": 0, "avg_substitutability": 0,
             "avg_composite": 0, "importer_count": 0, "high_risk_count": 0,
         }
     yr = year or get_year_range()[1]
@@ -313,14 +318,14 @@ def get_product_summary(hs6: str, year: int | None = None) -> dict:
             SELECT
                 AVG(hhi) AS avg_hhi,
                 AVG(basket_geo_risk) AS avg_geo_risk,
-                AVG(essentiality_score) AS avg_essentiality,
+                AVG(substitutability_score) AS avg_substitutability,
                 AVG(composite_score) AS avg_composite,
                 COUNT(*) AS importer_count,
                 SUM(CASE WHEN composite_score > 0.7 THEN 1 ELSE 0 END) AS high_risk_count
             FROM (
                 SELECT DISTINCT
                     importer_iso3, hhi, basket_geo_risk,
-                    essentiality_score, composite_score
+                    substitutability_score, composite_score
                 FROM dependency_scores
                 WHERE hs6 = ? AND year = ?
             ) sub
@@ -331,7 +336,7 @@ def get_product_summary(hs6: str, year: int | None = None) -> dict:
             return {
                 "avg_hhi": round(float(row[0] or 0), 3),
                 "avg_geo_risk": round(float(row[1] or 0), 3),
-                "avg_essentiality": round(float(row[2] or 0), 3),
+                "avg_substitutability": round(float(row[2] or 0), 3),
                 "avg_composite": round(float(row[3] or 0), 3),
                 "importer_count": int(row[4] or 0),
                 "high_risk_count": int(row[5] or 0),
@@ -339,7 +344,7 @@ def get_product_summary(hs6: str, year: int | None = None) -> dict:
     except Exception as exc:
         logger.error("get_product_summary query failed: {}", exc)
     return {
-        "avg_hhi": 0, "avg_geo_risk": 0, "avg_essentiality": 0,
+        "avg_hhi": 0, "avg_geo_risk": 0, "avg_substitutability": 0,
         "avg_composite": 0, "importer_count": 0, "high_risk_count": 0,
     }
 
@@ -357,14 +362,14 @@ def get_score_trend(importer_iso3: str, hs6: str) -> list[dict]:
     try:
         rows = _conn.execute(
             """
-            SELECT DISTINCT year, composite_score, hhi, basket_geo_risk, essentiality_score
+            SELECT DISTINCT year, composite_score, hhi, basket_geo_risk, substitutability_score
             FROM dependency_scores
             WHERE importer_iso3 = ? AND hs6 = ?
             ORDER BY year
             """,
             [importer_iso3, hs6],
         ).fetchall()
-        cols = ["year", "composite_score", "hhi", "basket_geo_risk", "essentiality_score"]
+        cols = ["year", "composite_score", "hhi", "basket_geo_risk", "substitutability_score"]
         return [
             {
                 c: (round(v, 4) if isinstance(v, float) else v)
@@ -427,10 +432,10 @@ def get_product_trend(hs6: str) -> list[dict]:
                    AVG(composite_score) AS composite_score,
                    AVG(hhi) AS hhi,
                    AVG(basket_geo_risk) AS basket_geo_risk,
-                   AVG(essentiality_score) AS essentiality_score
+                   AVG(substitutability_score) AS substitutability_score
             FROM (
                 SELECT DISTINCT importer_iso3, year, composite_score, hhi,
-                       basket_geo_risk, essentiality_score
+                       basket_geo_risk, substitutability_score
                 FROM dependency_scores
                 WHERE hs6 = ?
             ) sub
@@ -439,7 +444,7 @@ def get_product_trend(hs6: str) -> list[dict]:
             """,
             [hs6],
         ).fetchall()
-        cols = ["year", "composite_score", "hhi", "basket_geo_risk", "essentiality_score"]
+        cols = ["year", "composite_score", "hhi", "basket_geo_risk", "substitutability_score"]
         return [
             {
                 c: (round(v, 4) if isinstance(v, float) else v)

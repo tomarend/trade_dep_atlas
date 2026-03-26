@@ -157,7 +157,7 @@ def layout(**kwargs):
                         "flex": 2,
                         "filter": "agTextColumnFilter",
                         # Cross-link to country view
-                        "cellRenderer": {"function": "params.value ? `<a href='/country?iso3=${params.data.importer_iso3}' style='color:#2563eb;text-decoration:none'>${params.value}</a>` : ''"},
+                        "cellRenderer": "CountryLink",
                     },
                     {
                         "field": "composite_score",
@@ -189,24 +189,18 @@ def layout(**kwargs):
                         "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
                     },
                     {
-                        "field": "essentiality_score",
-                        "headerName": "Essentiality",
-                        "width": 120,
+                        "field": "substitutability_score",
+                        "headerName": "Substitutability",
+                        "width": 140,
                         "filter": "agNumberColumnFilter",
                         "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
                     },
                     {
-                        "field": "essentiality_tier",
-                        "headerName": "Tier",
-                        "width": 100,
+                        "field": "flags",
+                        "headerName": "Flags",
+                        "flex": 1,
                         "filter": "agTextColumnFilter",
-                        "cellStyle": {
-                            "function": """
-                                params.value === 'critical' ? {'color': '#dc2626', 'fontWeight': '600'}
-                                : params.value === 'important' ? {'color': '#d97706'}
-                                : {}
-                            """
-                        },
+                        "valueFormatter": {"function": "(params.value || []).join(', ')"},
                     },
                 ],
                 defaultColDef={
@@ -308,8 +302,8 @@ def update_product_summary(importer_data, hs6, year):
     # Product-level radar chart
     radar = go.Figure()
     radar.add_trace(go.Scatterpolar(
-        r=[summary["avg_hhi"], summary["avg_geo_risk"], summary["avg_essentiality"]],
-        theta=["HHI Concentration", "Geo Risk", "Essentiality"],
+        r=[summary["avg_hhi"], summary["avg_geo_risk"], summary["avg_substitutability"]],
+        theta=["HHI Concentration", "Geo Risk", "Substitutability"],
         fill="toself",
         fillcolor="rgba(37, 99, 235, 0.15)",
         line=dict(color="#2563eb"),
@@ -343,8 +337,8 @@ def update_product_summary(importer_data, hs6, year):
                 html.H3(f"{summary['avg_geo_risk']:.3f}", className="mb-0"),
             ])), md=3),
             dbc.Col(dbc.Card(dbc.CardBody([
-                html.P("Essentiality", className="text-muted mb-1 small fw-semibold"),
-                html.H3(f"{summary['avg_essentiality']:.3f}", className="mb-0"),
+                html.P("Substitutability", className="text-muted mb-1 small fw-semibold"),
+                html.H3(f"{summary['avg_substitutability']:.3f}", className="mb-0"),
             ])), md=3),
         ], className="g-3"),
         dbc.Row([
@@ -461,7 +455,7 @@ def update_product_trend(hs6, year):
     composite_vals = [trend_by_year[y]["composite_score"] if y in trend_by_year else None for y in all_years]
     hhi_vals = [trend_by_year[y]["hhi"] if y in trend_by_year else None for y in all_years]
     geo_vals = [trend_by_year[y]["basket_geo_risk"] if y in trend_by_year else None for y in all_years]
-    ess_vals = [trend_by_year[y]["essentiality_score"] if y in trend_by_year else None for y in all_years]
+    ess_vals = [trend_by_year[y]["substitutability_score"] if y in trend_by_year else None for y in all_years]
 
     trend_fig = go.Figure()
     trend_fig.add_trace(go.Scatter(
@@ -481,7 +475,7 @@ def update_product_trend(hs6, year):
     ))
     trend_fig.add_trace(go.Scatter(
         x=all_years, y=ess_vals, mode="lines",
-        name="Essentiality", line=dict(color="#059669", width=1.5, dash="dot"),
+        name="Substitutability", line=dict(color="#059669", width=1.5, dash="dot"),
         visible="legendonly", connectgaps=False,
     ))
     trend_fig.add_vline(

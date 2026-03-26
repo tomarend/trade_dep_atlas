@@ -88,7 +88,7 @@ def layout(**kwargs):
                                 ),
                             ], md=4),
                             dbc.Col([
-                                dbc.Label("Essentiality", className="small fw-semibold"),
+                                dbc.Label("Substitutability", className="small fw-semibold"),
                                 dcc.Slider(
                                     id="weight-ess", min=0, max=1, step=0.05, value=0.30,
                                     marks=None,
@@ -124,7 +124,7 @@ def layout(**kwargs):
                         "filter": "agTextColumnFilter",
                         "pinned": "left",
                         # Cross-link to product view
-                        "cellRenderer": {"function": "params.value ? `<a href='/product?hs6=${params.value}' style='color:#2563eb;text-decoration:none'>${params.value}</a>` : ''"},
+                        "cellRenderer": "ProductLink",
                     },
                     {
                         "field": "description",
@@ -163,24 +163,18 @@ def layout(**kwargs):
                         "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
                     },
                     {
-                        "field": "essentiality_score",
-                        "headerName": "Essentiality",
-                        "width": 120,
+                        "field": "substitutability_score",
+                        "headerName": "Substitutability",
+                        "width": 140,
                         "filter": "agNumberColumnFilter",
                         "valueFormatter": {"function": "d3.format('.3f')(params.value)"},
                     },
                     {
-                        "field": "essentiality_tier",
-                        "headerName": "Tier",
-                        "width": 100,
+                        "field": "flags",
+                        "headerName": "Flags",
+                        "flex": 1,
                         "filter": "agTextColumnFilter",
-                        "cellStyle": {
-                            "function": """
-                                params.value === 'critical' ? {'color': '#dc2626', 'fontWeight': '600'}
-                                : params.value === 'important' ? {'color': '#d97706'}
-                                : {}
-                            """
-                        },
+                        "valueFormatter": {"function": "(params.value || []).join(', ')"},
                     },
                 ],
                 defaultColDef={
@@ -288,15 +282,18 @@ def update_summary_cards(products, w_hhi, w_geo, w_ess):
 
     for p in products:
         p["weighted_composite"] = (
-            w_hhi * p["hhi"] + w_geo * p["basket_geo_risk"] + w_ess * p["essentiality_score"]
+            w_hhi * p["hhi"] + w_geo * p["basket_geo_risk"] + w_ess * p["substitutability_score"]
         )
 
     n = len(products)
     avg_composite = sum(p["weighted_composite"] for p in products) / n
     avg_hhi = sum(p["hhi"] for p in products) / n
     avg_geo = sum(p["basket_geo_risk"] for p in products) / n
-    avg_ess = sum(p["essentiality_score"] for p in products) / n
-    critical_count = sum(1 for p in products if p["essentiality_tier"] == "critical")
+    avg_ess = sum(p["substitutability_score"] for p in products) / n
+    critical_count = sum(
+        1 for p in products
+        if "crm_listed" in (p.get("flags") or []) or "strategic_mineral" in (p.get("flags") or [])
+    )
     high_risk = sum(1 for p in products if p["weighted_composite"] > 0.7)
 
     level = "high" if avg_composite > 0.7 else "medium" if avg_composite > 0.4 else "low"
@@ -305,7 +302,7 @@ def update_summary_cards(products, w_hhi, w_geo, w_ess):
     overview_radar = go.Figure()
     overview_radar.add_trace(go.Scatterpolar(
         r=[avg_hhi, avg_geo, avg_ess],
-        theta=["HHI Concentration", "Geo Risk", "Essentiality"],
+        theta=["HHI Concentration", "Geo Risk", "Substitutability"],
         fill="toself",
         fillcolor="rgba(37, 99, 235, 0.15)",
         line=dict(color="#2563eb"),
@@ -339,9 +336,9 @@ def update_summary_cards(products, w_hhi, w_geo, w_ess):
                 html.H3(f"{avg_geo:.3f}", className="mb-0"),
             ])), md=3),
             dbc.Col(dbc.Card(dbc.CardBody([
-                html.P("Essentiality", className="text-muted mb-1 small fw-semibold"),
+                html.P("Substitutability", className="text-muted mb-1 small fw-semibold"),
                 html.H3(f"{avg_ess:.3f}", className="mb-0"),
-                html.Span(f"{critical_count} critical", className="text-muted small"),
+                html.Span(f"{critical_count} strategic", className="text-muted small"),
             ])), md=3),
         ], className="g-3"),
         dbc.Row([
@@ -371,7 +368,7 @@ def update_product_table(products, w_hhi, w_geo, w_ess):
         return []
     for p in products:
         p["weighted_composite"] = round(
-            w_hhi * p["hhi"] + w_geo * p["basket_geo_risk"] + w_ess * p["essentiality_score"],
+            w_hhi * p["hhi"] + w_geo * p["basket_geo_risk"] + w_ess * p["substitutability_score"],
             4,
         )
     products.sort(key=lambda x: x["weighted_composite"], reverse=True)
@@ -469,8 +466,8 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
     # -- Radar Chart: Score Decomposition --
     radar_fig = go.Figure()
     radar_fig.add_trace(go.Scatterpolar(
-        r=[product["hhi"], product["basket_geo_risk"], product["essentiality_score"]],
-        theta=["HHI Concentration", "Geo Risk", "Essentiality"],
+        r=[product["hhi"], product["basket_geo_risk"], product["substitutability_score"]],
+        theta=["HHI Concentration", "Geo Risk", "Substitutability"],
         fill="toself",
         name=hs6,
         fillcolor="rgba(37, 99, 235, 0.15)",
@@ -518,7 +515,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
         composite_vals = [trend_by_year[y]["composite_score"] if y in trend_by_year else None for y in all_years]
         hhi_vals = [trend_by_year[y]["hhi"] if y in trend_by_year else None for y in all_years]
         geo_vals = [trend_by_year[y]["basket_geo_risk"] if y in trend_by_year else None for y in all_years]
-        ess_vals = [trend_by_year[y]["essentiality_score"] if y in trend_by_year else None for y in all_years]
+        ess_vals = [trend_by_year[y]["substitutability_score"] if y in trend_by_year else None for y in all_years]
 
         trend_fig = go.Figure()
         trend_fig.add_trace(go.Scatter(
@@ -538,7 +535,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
         ))
         trend_fig.add_trace(go.Scatter(
             x=years, y=ess_vals, mode="lines",
-            name="Essentiality", line=dict(color="#059669", width=1.5, dash="dot"),
+            name="Substitutability", line=dict(color="#059669", width=1.5, dash="dot"),
             visible="legendonly", connectgaps=False,
         ))
         trend_fig.add_vline(
@@ -572,7 +569,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
         html.Div([
             html.H5(f"Product Detail: {hs6} \u2014 {description}", className="mb-1"),
             html.Span(
-                f"Tier: {product.get('essentiality_tier', '\u2014')} \u00b7 "
+                f"Flags: {', '.join(product.get('flags') or []) or '\u2014'} \u00b7 "
                 f"Composite: {weighted:.3f}",
                 className="text-muted small",
             ),

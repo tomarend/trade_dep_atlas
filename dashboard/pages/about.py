@@ -179,70 +179,54 @@ Where $R_{\text{gov}}$ is governance risk (0–1, higher = worse), derived from 
 
 
 # ---------------------------------------------------------------------------
-# Tab: Essentiality
+# Tab: Substitutability
 # ---------------------------------------------------------------------------
 
-def _tab_essentiality() -> dbc.Card:
-    tiers = [
-        {
-            "tier": "Critical",
-            "range": "0.85 – 1.0",
-            "color": "danger",
-            "examples": "EU Critical Raw Materials (CRM 2023), USGS Critical Minerals",
-        },
-        {
-            "tier": "Important",
-            "range": "0.45 – 0.70",
-            "color": "warning",
-            "examples": "Energy products, pharmaceuticals, food staples, semiconductors",
-        },
-        {
-            "tier": "Standard",
-            "range": "0.10 – 0.30",
-            "color": "secondary",
-            "examples": "General industrial inputs not on critical lists",
-        },
+def _tab_substitutability() -> dbc.Card:
+    flags = [
+        {"name": "crm_listed", "desc": "EU Critical Raw Materials (CRM 2023) or USGS Critical Minerals"},
+        {"name": "strategic_mineral", "desc": "Broader set of strategic minerals mapped from HS4 codes"},
+        {"name": "energy", "desc": "HS chapter 27 commodities (fossil fuels, excludes electricity HS 2716)"},
+        {"name": "food", "desc": "HS chapters 01–24 (agricultural and food products)"},
+        {"name": "fertilizer", "desc": "HS chapter 31 (fertilizers)"},
+        {"name": "pharma", "desc": "HS chapters 29–30 (organic chemicals and pharmaceutical products)"},
+        {"name": "semiconductor", "desc": "Key HS6 codes for integrated circuits and semiconductor wafers"},
+        {"name": "hs22_only", "desc": "Product first appeared in the HS 2022 revision (no historical data pre-2022)"},
     ]
 
-    tier_cards = dbc.Row(
-        [
-            dbc.Col(
-                html.Div([
-                    html.Div([
-                        html.Span(t["tier"], className=f"tier-name tier-{t['color']}"),
-                        html.Span(t["range"], className="tier-range"),
-                    ], className="tier-header"),
-                    html.P(t["examples"], className="tier-examples"),
-                ], className="tier-card"),
-                md=4,
-            )
-            for t in tiers
-        ],
-        className="g-3 mb-2",
-    )
+    flag_rows = html.Div([
+        html.Div([
+            html.Code(f["name"], className="flag-code"),
+            html.Span(f["desc"], className="flag-desc"),
+        ], className="flag-row")
+        for f in flags
+    ], className="flag-list mb-3")
 
     return dbc.Card(
         dbc.CardBody([
             html.P(
-                """Essentiality captures how critical a product is to an economy
-                independent of where it comes from. Products are assigned to tiers
-                based on their appearance on critical materials lists.""",
+                """Substitutability measures how difficult it is for the global economy to
+                replace a product's supply from alternative sources, independent of any
+                single importing country's exposure.""",
                 className="method-intro",
             ),
 
-            _section("TIER DEFINITIONS", tier_cards),
-
             _section(
-                "WITHIN-TIER GRADIENT",
+                "SUBSTITUTABILITY SCORE",
                 html.P(
-                    """A product's exact score within its tier is modulated by its
-                    global export HHI — i.e., how concentrated global production is,
-                    regardless of the analysed country's specific suppliers.
-                    A critical material with highly concentrated global supply
-                    (few producing nations) scores at the top of the Critical range.""",
+                    [
+                        "The score is defined as ",
+                        html.Code("substitutability_score = √(global_export_hhi)"),
+                        """, where the global export HHI captures how concentrated
+                        worldwide exports of that product are across all supplying
+                        nations. A score near 1 means a single dominant exporter
+                        controls global supply, making the product hard to substitute.""",
+                    ],
                     className="method-text",
                 ),
             ),
+
+            _section("PRODUCT FLAGS", flag_rows),
 
             _section(
                 "DATA SOURCES",
@@ -254,6 +238,10 @@ def _tab_essentiality() -> dbc.Card:
                     html.Div([
                         html.Span("USGS Critical Minerals List (2022)", className="src-name"),
                         html.Span("US Geological Survey", className="src-provider"),
+                    ], className="src-row"),
+                    html.Div([
+                        html.Span("BACI Global Trade (HS 1992 & 2022 revisions)", className="src-name"),
+                        html.Span("CEPII", className="src-provider"),
                     ], className="src-row"),
                 ], className="src-list"),
             ),
@@ -354,7 +342,7 @@ layout = dbc.Container(
             [
                 dbc.Tab(_tab_hhi(), label="HHI Concentration", tab_id="tab-hhi"),
                 dbc.Tab(_tab_georisk(), label="Geopolitical Risk", tab_id="tab-georisk"),
-                dbc.Tab(_tab_essentiality(), label="Essentiality", tab_id="tab-essentiality"),
+                dbc.Tab(_tab_substitutability(), label="Substitutability", tab_id="tab-substitutability"),
                 dbc.Tab(_tab_sources(), label="Data Sources", tab_id="tab-sources"),
             ],
             id="about-tabs",
