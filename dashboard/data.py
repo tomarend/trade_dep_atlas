@@ -413,3 +413,40 @@ def get_trade_flows(hs6: str, year: int | None = None) -> list[dict]:
     except Exception as exc:
         logger.error("get_trade_flows query failed: {}", exc)
     return []
+
+
+
+def get_product_trend(hs6: str) -> list[dict]:
+    """Return per-year aggregated stats across all importers for a product."""
+    if _conn is None:
+        return []
+    try:
+        rows = _conn.execute(
+            """
+            SELECT year,
+                   AVG(composite_score) AS composite_score,
+                   AVG(hhi) AS hhi,
+                   AVG(basket_geo_risk) AS basket_geo_risk,
+                   AVG(essentiality_score) AS essentiality_score
+            FROM (
+                SELECT DISTINCT importer_iso3, year, composite_score, hhi,
+                       basket_geo_risk, essentiality_score
+                FROM dependency_scores
+                WHERE hs6 = ?
+            ) sub
+            GROUP BY year
+            ORDER BY year
+            """,
+            [hs6],
+        ).fetchall()
+        cols = ["year", "composite_score", "hhi", "basket_geo_risk", "essentiality_score"]
+        return [
+            {
+                c: (round(v, 4) if isinstance(v, float) else v)
+                for c, v in zip(cols, row)
+            }
+            for row in rows
+        ]
+    except Exception as exc:
+        logger.error("get_product_trend query failed: {}", exc)
+    return []

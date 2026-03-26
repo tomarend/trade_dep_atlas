@@ -227,6 +227,9 @@ def layout(**kwargs):
 
         # -- Choropleth map --
         html.Div(id="product-map-container", className="mt-3"),
+
+        # -- Trend chart --
+        html.Div(id="product-trend-container", className="mt-3"),
     ])
 
 
@@ -418,3 +421,75 @@ def update_product_choropleth(importer_data, hs6):
         figure=fig,
         config={"displayModeBar": False},
     )
+
+
+
+@callback(
+    Output("product-trend-container", "children"),
+    [Input("product-hs6-selector", "value"),
+     Input("year-store", "data")],
+)
+def update_product_trend(hs6, year):
+    """Render product-level trend chart showing global dependency evolution over time."""
+    if not hs6:
+        return html.Div()
+
+    trend_data = data.get_product_trend(hs6)
+    if not trend_data:
+        return html.P("No historical data available.", className="text-muted")
+
+    # Look up product description
+    description = hs6
+    products = data.get_product_list()
+    for p in products:
+        if p["hs6"] == hs6:
+            description = p["description"]
+            break
+
+    min_year, max_year = data.get_year_range()
+    all_years = list(range(min_year, max_year + 1))
+    trend_by_year = {r["year"]: r for r in trend_data}
+
+    composite_vals = [trend_by_year[y]["composite_score"] if y in trend_by_year else None for y in all_years]
+    hhi_vals = [trend_by_year[y]["hhi"] if y in trend_by_year else None for y in all_years]
+    geo_vals = [trend_by_year[y]["basket_geo_risk"] if y in trend_by_year else None for y in all_years]
+    ess_vals = [trend_by_year[y]["essentiality_score"] if y in trend_by_year else None for y in all_years]
+
+    trend_fig = go.Figure()
+    trend_fig.add_trace(go.Scatter(
+        x=all_years, y=composite_vals, mode="lines+markers",
+        name="Composite", line=dict(color="#2563eb", width=2),
+        marker=dict(size=4), connectgaps=False,
+    ))
+    trend_fig.add_trace(go.Scatter(
+        x=all_years, y=hhi_vals, mode="lines",
+        name="HHI", line=dict(color="#8b5cf6", width=1.5, dash="dot"),
+        visible="legendonly", connectgaps=False,
+    ))
+    trend_fig.add_trace(go.Scatter(
+        x=all_years, y=geo_vals, mode="lines",
+        name="Geo Risk", line=dict(color="#dc2626", width=1.5, dash="dot"),
+        visible="legendonly", connectgaps=False,
+    ))
+    trend_fig.add_trace(go.Scatter(
+        x=all_years, y=ess_vals, mode="lines",
+        name="Essentiality", line=dict(color="#059669", width=1.5, dash="dot"),
+        visible="legendonly", connectgaps=False,
+    ))
+    trend_fig.add_vline(
+        x=year, line_dash="dash", line_color="gray",
+        annotation_text="Selected", annotation_position="top right",
+    )
+    trend_fig.update_layout(
+        template="plotly_white", font_family="Inter",
+        title=f"Global Dependency Trend \u2014 {description}",
+        xaxis_title="Year", yaxis_title="Score",
+        yaxis_range=[0, 1], height=350,
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        margin=dict(l=50, r=20, t=60, b=40),
+    )
+
+    return html.Div([
+        html.H5("Dependency Trend", className="fw-semibold mt-4 mb-2"),
+        dcc.Graph(id="product-trend-chart", figure=trend_fig, config={"displayModeBar": False}),
+    ])
