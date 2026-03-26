@@ -127,12 +127,12 @@ Plans:
   2. Sankey diagrams display supplier→importer trade flows with width proportional to trade share and color encoding geopolitical risk
   3. Force-directed network graph renders countries as nodes and trade flows as edges, with color/size encoding risk and volume
   4. Time series displays handle missing data gracefully where gaps exist in BACI coverage
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: TBD
-- [ ] 06-02: TBD
-- [ ] 06-03: TBD
+- [ ] 06-01-PLAN.md — Year slider in sidebar + data queries (trend, trade flows) + wire year to all page callbacks
+- [ ] 06-02-PLAN.md — Trend line charts in country drill-down + product page with toggleable sub-scores
+- [ ] 06-03-PLAN.md — Sankey flow diagram + force-directed network graph on product page
 
 ## Progress
 
@@ -151,4 +151,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 4.1 → 5 → 6
 
 ---
 *Roadmap created: 2026-03-17*
-*Last updated: 2026-03-23*
+*Last updated: 2026-03-26*
