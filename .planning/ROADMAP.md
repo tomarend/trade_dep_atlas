@@ -156,10 +156,13 @@ v2.0 goal: empirical scoring, lean data pipeline, insight-first visualization.
   3. Composite score formula uses `w3 * global_export_hhi` as third component; weights still sum to 1.0 and can be adjusted
   4. DuckDB products dim has `flags` LIST column and `global_export_hhi`; dependency_scores has `substitutability_score`; no essentiality_tier column
   5. Full pipeline run completes end-to-end and dashboard launches without ColumnNotFound errors
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — TBD
+- [ ] 07-01-PLAN.md — Slim BACI download to HS92+HS22 only; HS22 priority ingest for 2022-2024; BACI product codes as authoritative descriptions
+- [ ] 07-02-PLAN.md — Create pipeline/flags.py and data/reference/flags_config.yaml with 8 canonical product flags
+- [ ] 07-03-PLAN.md — Wire composite.py + export.py + __main__.py for new schema; delete essentiality files
+- [ ] 07-04-PLAN.md — Update dashboard/data.py, country.py, product.py for v2 DuckDB schema
 
 ### Phase 8: Dashboard Redesign
 **Goal**: Country page is insight-first with hero cards, scatter plot, and bilateral risk panel; product page has concentration bars and flag badges; network graph removed; all "essentiality" labels replaced
