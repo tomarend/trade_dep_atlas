@@ -142,7 +142,7 @@ Plans:
 Phases 7–9 continue from v1 execution order. Each phase builds on prior output.
 v2.0 goal: empirical scoring, lean data pipeline, insight-first visualization.
 
-- [ ] **Phase 7: Pipeline & Scoring Rework** - Replace tier scoring with global_export_hhi, slim BACI download to HS92+HS22, rebuild DuckDB schema
+- [x] **Phase 7: Pipeline & Scoring Rework** - Replace tier scoring with global_export_hhi, slim BACI download to HS92+HS22, rebuild DuckDB schema
 - [ ] **Phase 8: Dashboard Redesign** - Country page hero/scatter/bilateral, product page concentration bars/flags, remove network graph
 - [ ] **Phase 9: Time Series** - Update trend charts for substitutability, add sparklines via custom SVG cellRenderer
 
@@ -159,10 +159,10 @@ v2.0 goal: empirical scoring, lean data pipeline, insight-first visualization.
 **Plans**: 4 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — Slim BACI download to HS92+HS22 only; HS22 priority ingest for 2022-2024; BACI product codes as authoritative descriptions
-- [ ] 07-02-PLAN.md — Create pipeline/flags.py and data/reference/flags_config.yaml with 8 canonical product flags
-- [ ] 07-03-PLAN.md — Wire composite.py + export.py + __main__.py for new schema; delete essentiality files
-- [ ] 07-04-PLAN.md — Update dashboard/data.py, country.py, product.py for v2 DuckDB schema
+- [x] 07-01-PLAN.md — Slim BACI download to HS92+HS22 only; HS22 priority ingest for 2022-2024; BACI product codes as authoritative descriptions
+- [x] 07-02-PLAN.md — Create pipeline/flags.py and data/reference/flags_config.yaml with 8 canonical product flags
+- [x] 07-03-PLAN.md — Wire composite.py + export.py + __main__.py for new schema; delete essentiality files
+- [x] 07-04-PLAN.md — Update dashboard/data.py, country.py, product.py for v2 DuckDB schema
 
 ### Phase 8: Dashboard Redesign
 **Goal**: Country page is insight-first with hero cards, scatter plot, and bilateral risk panel; product page has concentration bars and flag badges; network graph removed; all "essentiality" labels replaced
