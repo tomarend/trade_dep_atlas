@@ -51,11 +51,11 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Visualizations
 
 - [ ] **VIZZ-01**: Dashboard renders a choropleth world map colored by dependency metric (score, HHI, risk)
-- [ ] **VIZZ-02**: Dashboard renders Sankey diagrams showing supplier→importer trade flows, width proportional to trade share, color encoding geopolitical risk
+- [x] **VIZZ-02**: Dashboard renders Sankey diagrams showing supplier→importer trade flows, width proportional to trade share, color encoding geopolitical risk
 - [ ] **VIZZ-03**: Dashboard renders bar and line charts for score decomposition and trends
 - [ ] **VIZZ-04**: Dashboard renders sortable data tables with AG Grid (sorting, filtering, pagination, conditional formatting)
 - [ ] **VIZZ-05**: Dashboard renders radar/spider chart showing score decomposition (HHI vs geo risk vs essentiality) for a product-country pair
-- [ ] **VIZZ-06**: Dashboard renders force-directed network graph of trade dependency relationships (nodes = countries, edges = flows, color/size = risk/volume)
+- [x] **VIZZ-06**: Dashboard renders force-directed network graph of trade dependency relationships (nodes = countries, edges = flows, color/size = risk/volume)
 
 ### Dashboard Shell
 
@@ -135,11 +135,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TIME-02 | Phase 6 | Complete |
 | TIME-03 | Phase 6 | Complete |
 | VIZZ-01 | Phase 4 | Pending |
-| VIZZ-02 | Phase 6 | Pending |
+| VIZZ-02 | Phase 6 | Complete |
 | VIZZ-03 | Phase 4 | Pending |
 | VIZZ-04 | Phase 4 | Pending |
 | VIZZ-05 | Phase 4 | Pending |
-| VIZZ-06 | Phase 6 | Pending |
+| VIZZ-06 | Phase 6 | Complete |
 | DASH-01 | Phase 3 | Pending |
 | DASH-02 | Phase 3 | Pending |
 | DASH-03 | Phase 3 | Pending |
