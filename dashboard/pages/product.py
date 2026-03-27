@@ -8,7 +8,6 @@ import plotly.graph_objects as go
 from dash import callback, dcc, html, Input, Output, State, no_update
 from urllib.parse import parse_qs
 
-import dash_cytoscape as cyto
 
 from dashboard import data
 
@@ -136,6 +135,9 @@ def layout(**kwargs):
         # -- Summary cards --
         html.Div(id="product-summary-cards", className="mb-3"),
 
+        # -- Concentration bar chart --
+        html.Div(id="product-concentration-container", className="mb-3"),
+
         # -- Data store --
         dcc.Store(id="product-data-store", storage_type="memory"),
 
@@ -230,8 +232,6 @@ def layout(**kwargs):
         # -- Sankey flow diagram --
         html.Div(id="product-sankey-container", className="mt-4"),
 
-        # -- Network graph --
-        html.Div(id="product-network-container", className="mt-4 mb-4"),
     ])
 
 
@@ -296,6 +296,28 @@ def update_product_summary(importer_data, hs6, year):
 
     summary = data.get_product_summary(hs6, year=year)
 
+    _BADGE_COLORS = {
+        "crm_listed": "danger", "energy": "warning", "pharma": "info",
+        "semiconductor": "secondary", "strategic_mineral": "dark",
+        "fertilizer": "success", "hs22_only": "light",
+    }
+    flags = summary.get("flags") or []
+    crm_year = summary.get("crm_listed_since")
+
+    badge_row = html.Div(
+        [
+            dbc.Badge(
+                (f"CRM {crm_year}" if (flag == "crm_listed" and crm_year)
+                 else flag.replace("_", " ").title()),
+                color=_BADGE_COLORS.get(flag, "secondary"),
+                text_color="dark" if flag == "hs22_only" else None,
+                className="me-1 mb-1",
+            )
+            for flag in flags
+        ],
+        className="mb-2",
+    ) if flags else html.Div()
+
     avg_composite = summary["avg_composite"]
     level = "high" if avg_composite > 0.7 else "medium" if avg_composite > 0.4 else "low"
 
@@ -319,6 +341,7 @@ def update_product_summary(importer_data, hs6, year):
     )
 
     return html.Div([
+        badge_row,
         dbc.Row([
             dbc.Col(dbc.Card(dbc.CardBody([
                 html.P("Global Exposure", className="text-muted mb-1 small fw-semibold"),
@@ -352,6 +375,70 @@ def update_product_summary(importer_data, hs6, year):
                 className="mx-auto mt-3",
             ),
         ]),
+    ])
+
+
+
+@callback(
+    Output("product-concentration-container", "children"),
+    Input("product-hs6-selector", "value"),
+    State("year-store", "data"),
+)
+def update_concentration_bars(hs6, year):
+    """Render horizontal bar chart of top global exporters for the selected product."""
+    if not hs6:
+        return html.Div()
+    exporters = data.get_product_exporters(hs6, year=year)
+    if not exporters:
+        return html.Div("No exporter data available.", className="text-muted p-3")
+
+    # Build flag-emoji-prefixed labels using _ISO3_TO_ISO2 lookup
+    tick_labels = []
+    for r in exporters:
+        iso2 = data._ISO3_TO_ISO2.get(r["exporter_iso3"], "").upper()
+        if iso2 and len(iso2) == 2:
+            emoji = "".join(chr(127397 + ord(c)) for c in iso2)
+            tick_labels.append(f"{emoji} {r['exporter_name']}")
+        else:
+            tick_labels.append(r["exporter_name"])
+
+    shares = [round(r["supplier_share"] * 100, 2) for r in exporters]
+    geo_risks = [r["exporter_geo_risk"] for r in exporters]
+
+    fig = go.Figure(go.Bar(
+        y=tick_labels,
+        x=shares,
+        orientation="h",
+        marker=dict(
+            color=geo_risks,
+            colorscale=[[0, "#22c55e"], [0.5, "#f59e0b"], [1, "#ef4444"]],
+            cmin=0,
+            cmax=1,
+            showscale=True,
+            colorbar=dict(title="Geo<br>Risk", thickness=12),
+        ),
+        text=[f"{s:.1f}%" for s in shares],
+        textposition="outside",
+        hovertemplate="%{y}: %{x:.1f}% export share<extra></extra>",
+    ))
+    fig.update_layout(
+        xaxis_title="Global Export Share (%)",
+        xaxis_range=[0, max(shares) * 1.25 if shares else 100],
+        template="plotly_white",
+        font_family="Inter",
+        height=max(280, len(exporters) * 28),
+        margin=dict(l=160, r=80, t=10, b=40),
+        showlegend=False,
+        yaxis=dict(autorange="reversed"),
+    )
+
+    return html.Div([
+        html.H6("Export Concentration — Top Suppliers", className="fw-semibold mb-2"),
+        dcc.Graph(
+            id="product-concentration-chart",
+            figure=fig,
+            config={"displayModeBar": False},
+        ),
     ])
 
 
@@ -631,144 +718,3 @@ def update_sankey(hs6, year):
         dcc.Graph(id="product-sankey", figure=fig, config={"displayModeBar": False}),
     ])
 
-
-@callback(
-    Output("product-network-container", "children"),
-    [Input("product-hs6-selector", "value"),
-     Input("year-store", "data")],
-)
-def update_network(hs6, year):
-    """Render network graph of trade flows for the selected product and year."""
-    if not hs6:
-        return html.Div()
-
-    flows = data.get_trade_flows(hs6, year)
-    if not flows:
-        return html.P("No network data available.", className="text-muted")
-
-    from collections import defaultdict
-
-    # Aggregate by exporter and importer (top 10 each)
-    exporter_totals = defaultdict(float)
-    importer_totals = defaultdict(float)
-    for f in flows:
-        val = f.get("value_usd", 0) or 0
-        exporter_totals[f["exporter_iso3"]] += val
-        importer_totals[f["importer_iso3"]] += val
-
-    top_exporters = set(sorted(exporter_totals, key=exporter_totals.get, reverse=True)[:10])
-    top_importers = set(sorted(importer_totals, key=importer_totals.get, reverse=True)[:10])
-    relevant_countries = top_exporters | top_importers
-
-    # Build name/risk lookups
-    country_names = {}
-    country_risk = {}
-    country_volume = defaultdict(float)
-    for f in flows:
-        country_names[f["exporter_iso3"]] = f["exporter_name"]
-        country_names[f["importer_iso3"]] = f["importer_name"]
-        country_risk[f["exporter_iso3"]] = f.get("exporter_geo_risk", 0) or 0
-
-    # Compute volumes for node sizing
-    for f in flows:
-        val = f.get("value_usd", 0) or 0
-        if f["exporter_iso3"] in relevant_countries:
-            country_volume[f["exporter_iso3"]] += val
-        if f["importer_iso3"] in relevant_countries:
-            country_volume[f["importer_iso3"]] += val
-
-    max_volume = max(country_volume.values()) if country_volume else 1
-
-    # Build Cytoscape elements
-    elements = []
-    for iso3 in relevant_countries:
-        risk = country_risk.get(iso3, 0.5)
-        vol = country_volume.get(iso3, 0)
-        # Pre-compute node size (20-60 range)
-        size = 20 + (vol / max_volume) * 40 if max_volume > 0 else 30
-        # Color by risk
-        if risk > 0.7:
-            color = "#dc2626"
-        elif risk > 0.4:
-            color = "#d97706"
-        else:
-            color = "#16a34a"
-
-        elements.append({
-            "data": {
-                "id": iso3,
-                "label": country_names.get(iso3, iso3),
-                "size": size,
-                "color": color,
-            },
-        })
-
-    # Build edges
-    max_weight = 0
-    edge_data = []
-    for f in flows:
-        e = f["exporter_iso3"]
-        m = f["importer_iso3"]
-        if e in relevant_countries and m in relevant_countries and e != m:
-            val = f.get("value_usd", 0) or 0
-            if val > max_weight:
-                max_weight = val
-            edge_data.append((e, m, val))
-
-    for e, m, val in edge_data:
-        width = 1 + (val / max_weight) * 7 if max_weight > 0 else 1
-        elements.append({
-            "data": {
-                "source": e,
-                "target": m,
-                "weight": val,
-                "width": width,
-            },
-        })
-
-    if not elements:
-        return html.P("No network data to display.", className="text-muted")
-
-    network = cyto.Cytoscape(
-        id="trade-network",
-        elements=elements,
-        layout={"name": "cose", "animate": False, "nodeRepulsion": 8000, "idealEdgeLength": 100},
-        style={"width": "100%", "height": "500px"},
-        stylesheet=[
-            {
-                "selector": "node",
-                "style": {
-                    "label": "data(label)",
-                    "font-size": "10px",
-                    "font-family": "Inter",
-                    "text-valign": "bottom",
-                    "text-halign": "center",
-                    "width": "data(size)",
-                    "height": "data(size)",
-                    "background-color": "data(color)",
-                },
-            },
-            {
-                "selector": "edge",
-                "style": {
-                    "width": "data(width)",
-                    "curve-style": "bezier",
-                    "target-arrow-shape": "triangle",
-                    "arrow-scale": 0.8,
-                    "opacity": 0.6,
-                    "line-color": "#94a3b8",
-                    "target-arrow-color": "#94a3b8",
-                },
-            },
-        ],
-    )
-
-    return html.Div([
-        html.H5("Trade Network", className="fw-semibold mb-2"),
-        html.P(
-            "Countries as nodes, trade flows as directed edges. "
-            "Node size = trade volume, color = geo risk.",
-            className="text-muted small mb-2",
-        ),
-        network,
-    ])

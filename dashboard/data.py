@@ -35,6 +35,33 @@ else:
 #: True when the database is available and the connection succeeded.
 db_available: bool = _conn is not None
 
+#: Risk threshold above which a product is considered high-risk.
+RISK_THRESHOLD: float = 0.7
+
+#: ISO 3166-1 alpha-3 → alpha-2 lookup for flag rendering (flagcdn.com / Unicode emoji).
+#: Covers the ~80 countries most likely to appear as top exporters in trade data.
+_ISO3_TO_ISO2: dict[str, str] = {
+    "AFG": "AF", "AGO": "AO", "ARG": "AR", "AUS": "AU", "AUT": "AT",
+    "AZE": "AZ", "BEL": "BE", "BGD": "BD", "BGR": "BG", "BLR": "BY",
+    "BOL": "BO", "BRA": "BR", "CAN": "CA", "CHE": "CH", "CHL": "CL",
+    "CHN": "CN", "CIV": "CI", "CMR": "CM", "COD": "CD", "COL": "CO",
+    "CZE": "CZ", "DEU": "DE", "DNK": "DK", "DZA": "DZ", "ECU": "EC",
+    "EGY": "EG", "ESP": "ES", "EST": "EE", "ETH": "ET", "FIN": "FI",
+    "FRA": "FR", "GAB": "GA", "GBR": "GB", "GHA": "GH", "GRC": "GR",
+    "HKG": "HK", "HRV": "HR", "HUN": "HU", "IDN": "ID", "IND": "IN",
+    "IRL": "IE", "IRN": "IR", "IRQ": "IQ", "ISR": "IL", "ITA": "IT",
+    "JPN": "JP", "KAZ": "KZ", "KEN": "KE", "KOR": "KR", "KWT": "KW",
+    "LBN": "LB", "LTU": "LT", "LVA": "LV", "MAR": "MA", "MDG": "MG",
+    "MEX": "MX", "MNG": "MN", "MOZ": "MZ", "MYS": "MY", "NGA": "NG",
+    "NLD": "NL", "NOR": "NO", "NZL": "NZ", "OMN": "OM", "PAK": "PK",
+    "PER": "PE", "PHL": "PH", "POL": "PL", "PRT": "PT", "QAT": "QA",
+    "ROU": "RO", "RUS": "RU", "SAU": "SA", "SDN": "SD", "SEN": "SN",
+    "SGP": "SG", "SRB": "RS", "SVK": "SK", "SVN": "SI", "SWE": "SE",
+    "THA": "TH", "TUR": "TR", "TZA": "TZ", "UKR": "UA", "URY": "UY",
+    "USA": "US", "UZB": "UZ", "VEN": "VE", "VNM": "VN", "ZAF": "ZA",
+    "ZMB": "ZM", "ZWE": "ZW",
+}
+
 
 # ---------------------------------------------------------------------------
 # Cached startup queries
@@ -310,6 +337,7 @@ def get_product_summary(hs6: str, year: int | None = None) -> dict:
         return {
             "avg_hhi": 0, "avg_geo_risk": 0, "avg_substitutability": 0,
             "avg_composite": 0, "importer_count": 0, "high_risk_count": 0,
+            "flags": [], "crm_listed_since": None,
         }
     yr = year or get_year_range()[1]
     try:
@@ -333,6 +361,20 @@ def get_product_summary(hs6: str, year: int | None = None) -> dict:
             [hs6, yr],
         ).fetchone()
         if row:
+            # Also fetch product-level flags and CRM year
+            flags: list[str] = []
+            crm_listed_since: str | None = None
+            try:
+                prod_row = _conn.execute(
+                    "SELECT COALESCE(flags, []) AS flags, crm_listed_since "
+                    "FROM products WHERE hs6 = ?",
+                    [hs6],
+                ).fetchone()
+                if prod_row:
+                    flags = list(prod_row[0]) if prod_row[0] else []
+                    crm_listed_since = str(prod_row[1]) if prod_row[1] is not None else None
+            except Exception:
+                pass  # old schema without flags column — graceful degradation
             return {
                 "avg_hhi": round(float(row[0] or 0), 3),
                 "avg_geo_risk": round(float(row[1] or 0), 3),
@@ -340,12 +382,15 @@ def get_product_summary(hs6: str, year: int | None = None) -> dict:
                 "avg_composite": round(float(row[3] or 0), 3),
                 "importer_count": int(row[4] or 0),
                 "high_risk_count": int(row[5] or 0),
+                "flags": flags,
+                "crm_listed_since": crm_listed_since,
             }
     except Exception as exc:
         logger.error("get_product_summary query failed: {}", exc)
     return {
         "avg_hhi": 0, "avg_geo_risk": 0, "avg_substitutability": 0,
         "avg_composite": 0, "importer_count": 0, "high_risk_count": 0,
+        "flags": [], "crm_listed_since": None,
     }
 
 
@@ -455,3 +500,133 @@ def get_product_trend(hs6: str) -> list[dict]:
     except Exception as exc:
         logger.error("get_product_trend query failed: {}", exc)
     return []
+
+
+# ---------------------------------------------------------------------------
+# Phase 8: Dashboard Redesign — new queries
+# ---------------------------------------------------------------------------
+
+
+def get_scatter_data(importer_iso3: str, year: int | None = None) -> list[dict]:
+    """Return top-200 products by composite score for the scatter plot.
+
+    Returns rows with: hs6, description, hhi, substitutability_score,
+    composite_score, total_import_value_usd (SUM across all exporters).
+    """
+    if _conn is None:
+        return []
+    yr = year or get_year_range()[1]
+    try:
+        rows = _conn.execute(
+            """
+            WITH product_totals AS (
+                SELECT
+                    hs6,
+                    SUM(value_usd)           AS total_import_value_usd,
+                    MAX(hhi)                 AS hhi,
+                    MAX(substitutability_score) AS substitutability_score,
+                    MAX(composite_score)     AS composite_score
+                FROM dependency_scores
+                WHERE importer_iso3 = ? AND year = ?
+                GROUP BY hs6
+                ORDER BY MAX(composite_score) DESC
+                LIMIT 200
+            )
+            SELECT
+                pt.hs6,
+                COALESCE(p.description, \'\') AS description,
+                pt.hhi,
+                pt.substitutability_score,
+                pt.composite_score,
+                pt.total_import_value_usd
+            FROM product_totals pt
+            LEFT JOIN products p ON pt.hs6 = p.hs6
+            """,
+            [importer_iso3, yr],
+        ).fetchall()
+        cols = ["hs6", "description", "hhi", "substitutability_score",
+                "composite_score", "total_import_value_usd"]
+        return [
+            {c: (round(v, 4) if isinstance(v, float) else v) for c, v in zip(cols, row)}
+            for row in rows
+        ]
+    except Exception as exc:
+        logger.error("get_scatter_data query failed: {}", exc)
+    return []
+
+
+def get_bilateral_risk(importer_iso3: str, year: int | None = None) -> list[dict]:
+    """Return top-10 source countries ranked by weighted risk contribution.
+
+    weighted_risk_contribution = SUM(supplier_share * composite_score) across
+    all products for this importer/year, grouped by exporter.
+    Returns: exporter_iso3, exporter_name, weighted_risk_contribution, mean_geo_risk.
+    """
+    if _conn is None:
+        return []
+    yr = year or get_year_range()[1]
+    try:
+        rows = _conn.execute(
+            """
+            SELECT
+                ds.exporter_iso3,
+                COALESCE(c.name, ds.exporter_iso3) AS exporter_name,
+                SUM(ds.supplier_share * ds.composite_score) AS weighted_risk_contribution,
+                AVG(ds.exporter_geo_risk)                   AS mean_geo_risk
+            FROM dependency_scores ds
+            LEFT JOIN countries c ON ds.exporter_iso3 = c.iso3
+            WHERE ds.importer_iso3 = ? AND ds.year = ?
+            GROUP BY ds.exporter_iso3, exporter_name
+            ORDER BY weighted_risk_contribution DESC
+            LIMIT 10
+            """,
+            [importer_iso3, yr],
+        ).fetchall()
+        cols = ["exporter_iso3", "exporter_name",
+                "weighted_risk_contribution", "mean_geo_risk"]
+        return [
+            {c: (round(v, 4) if isinstance(v, float) else v) for c, v in zip(cols, row)}
+            for row in rows
+        ]
+    except Exception as exc:
+        logger.error("get_bilateral_risk query failed: {}", exc)
+    return []
+
+
+def get_product_exporters(hs6: str, year: int | None = None) -> list[dict]:
+    """Return top-15 exporting countries for a product by global share.
+
+    Aggregates value_usd across ALL importers for this hs6/year to compute
+    global export share per exporter. Returns: exporter_iso3, exporter_name,
+    supplier_share (fraction 0-1), exporter_geo_risk.
+    """
+    if _conn is None:
+        return []
+    yr = year or get_year_range()[1]
+    try:
+        rows = _conn.execute(
+            """
+            SELECT
+                ds.exporter_iso3,
+                COALESCE(c.name, ds.exporter_iso3) AS exporter_name,
+                SUM(ds.value_usd) * 1.0 /
+                    NULLIF(SUM(SUM(ds.value_usd)) OVER (), 0) AS supplier_share,
+                AVG(ds.exporter_geo_risk) AS exporter_geo_risk
+            FROM dependency_scores ds
+            LEFT JOIN countries c ON ds.exporter_iso3 = c.iso3
+            WHERE ds.hs6 = ? AND ds.year = ?
+            GROUP BY ds.exporter_iso3, exporter_name
+            ORDER BY SUM(ds.value_usd) DESC
+            LIMIT 15
+            """,
+            [hs6, yr],
+        ).fetchall()
+        cols = ["exporter_iso3", "exporter_name", "supplier_share", "exporter_geo_risk"]
+        return [
+            {c: (round(v, 4) if isinstance(v, float) else v) for c, v in zip(cols, row)}
+            for row in rows
+        ]
+    except Exception as exc:
+        logger.error("get_product_exporters query failed: {}", exc)
+    return []
+
