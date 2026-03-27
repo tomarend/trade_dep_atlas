@@ -179,7 +179,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 08-01-PLAN.md — TBD
+- [x] 08-01-PLAN.md — TBD
 
 ### Phase 9: Time Series
 **Goal**: Score trend charts show substitutability instead of essentiality, and AG Grid product tables have year sparklines
