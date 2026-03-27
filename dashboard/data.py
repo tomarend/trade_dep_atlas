@@ -630,3 +630,62 @@ def get_product_exporters(hs6: str, year: int | None = None) -> list[dict]:
         logger.error("get_product_exporters query failed: {}", exc)
     return []
 
+
+
+
+
+# ---------------------------------------------------------------------------
+# Phase 9: Time Series — sparkline batch queries
+# ---------------------------------------------------------------------------
+
+
+def get_sparklines_for_country(importer_iso3: str) -> dict[str, list[float]]:
+    """Return last-6-year composite score series per hs6 for sparkline cellRenderers."""
+    if _conn is None:
+        return {}
+    try:
+        rows = _conn.execute(
+            """
+            SELECT hs6, list(composite_score ORDER BY year)[-6:] AS sparkline
+            FROM (
+                SELECT DISTINCT hs6, year, composite_score
+                FROM dependency_scores
+                WHERE importer_iso3 = ?
+            )
+            GROUP BY hs6
+            """,
+            [importer_iso3],
+        ).fetchall()
+        return {
+            row[0]: [round(float(v), 3) for v in (row[1] or [])]
+            for row in rows
+        }
+    except Exception as exc:
+        logger.error("get_sparklines_for_country failed: {}", exc)
+    return {}
+
+
+def get_sparklines_for_product(hs6: str) -> dict[str, list[float]]:
+    """Return last-6-year composite score series per importer_iso3 for sparkline cellRenderers."""
+    if _conn is None:
+        return {}
+    try:
+        rows = _conn.execute(
+            """
+            SELECT importer_iso3, list(composite_score ORDER BY year)[-6:] AS sparkline
+            FROM (
+                SELECT DISTINCT importer_iso3, year, composite_score
+                FROM dependency_scores
+                WHERE hs6 = ?
+            )
+            GROUP BY importer_iso3
+            """,
+            [hs6],
+        ).fetchall()
+        return {
+            row[0]: [round(float(v), 3) for v in (row[1] or [])]
+            for row in rows
+        }
+    except Exception as exc:
+        logger.error("get_sparklines_for_product failed: {}", exc)
+    return {}
