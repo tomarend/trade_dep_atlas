@@ -7,6 +7,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dash import callback, clientside_callback, dcc, html, Input, Output, State, no_update
 
+import math
+
 from dashboard import data
 
 dash.register_page(
@@ -55,6 +57,12 @@ def layout(**kwargs):
 
         # -- Summary cards --
         html.Div(id="country-summary-cards", className="mb-3"),
+
+        # -- Product Risk Landscape (scatter plot) --
+        html.Div(id="country-scatter-container", className="mb-3"),
+
+        # -- Bilateral Risk Panel --
+        html.Div(id="country-bilateral-container", className="mb-3"),
 
         # -- Weight controls (collapsible) --
         dbc.Row([
@@ -273,7 +281,7 @@ def load_country_data(country_iso3, year):
      Input("weight-ess", "value")],
 )
 def update_summary_cards(products, w_hhi, w_geo, w_ess):
-    """Render summary cards with weight-adjusted scores and country overview radar."""
+    """Render hero stat cards and country overview radar."""
     if not products:
         return html.Div(
             "Select a country to view exposure analysis.",
@@ -285,20 +293,21 @@ def update_summary_cards(products, w_hhi, w_geo, w_ess):
             w_hhi * p["hhi"] + w_geo * p["basket_geo_risk"] + w_ess * p["substitutability_score"]
         )
 
+    # ── Hero stats (D-01) ──────────────────────────────────────────────────
     n = len(products)
-    avg_composite = sum(p["weighted_composite"] for p in products) / n
+    above_threshold = sum(
+        1 for p in products if p["weighted_composite"] > data.RISK_THRESHOLD
+    )
+    top_product = max(products, key=lambda p: p["weighted_composite"])
+    top_desc = (top_product.get("description") or top_product["hs6"])[:50]
+    max_score = top_product["weighted_composite"]
+    level = "high" if max_score > 0.7 else "medium" if max_score > 0.4 else "low"
+
+    # ── Country overview radar (D-02) ────────────────────────────────────
     avg_hhi = sum(p["hhi"] for p in products) / n
     avg_geo = sum(p["basket_geo_risk"] for p in products) / n
     avg_ess = sum(p["substitutability_score"] for p in products) / n
-    critical_count = sum(
-        1 for p in products
-        if "crm_listed" in (p.get("flags") or []) or "strategic_mineral" in (p.get("flags") or [])
-    )
-    high_risk = sum(1 for p in products if p["weighted_composite"] > 0.7)
 
-    level = "high" if avg_composite > 0.7 else "medium" if avg_composite > 0.4 else "low"
-
-    # Country-level overview radar
     overview_radar = go.Figure()
     overview_radar.add_trace(go.Scatterpolar(
         r=[avg_hhi, avg_geo, avg_ess],
@@ -310,38 +319,41 @@ def update_summary_cards(products, w_hhi, w_geo, w_ess):
     overview_radar.update_layout(
         polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
         showlegend=False,
-        title="Risk Profile Overview",
+        title="Risk Profile",
         template="plotly_white",
         font_family="Inter",
         margin=dict(l=40, r=40, t=50, b=30),
-        height=250,
+        height=230,
     )
+
+    # ── Layout: 4 hero cards (md=8, 2x2 grid) + radar (md=4) (D-02) ────
+    hero_cards = dbc.Col([
+        dbc.Row([
+            dbc.Col(dbc.Card(dbc.CardBody([
+                html.P("Total Products", className="text-muted mb-1 small fw-semibold"),
+                html.H2(f"{n}", className="mb-0"),
+            ])), md=6, className="mb-2"),
+            dbc.Col(dbc.Card(dbc.CardBody([
+                html.P("Above Risk Threshold", className="text-muted mb-1 small fw-semibold"),
+                html.H2(f"{above_threshold}", className="mb-0 text-danger" if above_threshold > 0 else "mb-0"),
+                html.Span(f"score > {data.RISK_THRESHOLD}", className="text-muted small"),
+            ])), md=6, className="mb-2"),
+        ]),
+        dbc.Row([
+            dbc.Col(dbc.Card(dbc.CardBody([
+                html.P("Highest-Risk Product", className="text-muted mb-1 small fw-semibold"),
+                html.P(top_desc, className="mb-0 fw-semibold", style={"fontSize": "0.85rem"}),
+            ])), md=6),
+            dbc.Col(dbc.Card(dbc.CardBody([
+                html.P("Max Composite Score", className="text-muted mb-1 small fw-semibold"),
+                html.H2(f"{max_score:.3f}", className=f"mb-0 score-value score-{level}"),
+            ])), md=6),
+        ]),
+    ], md=8)
 
     return html.Div([
         dbc.Row([
-            dbc.Col(dbc.Card(dbc.CardBody([
-                html.P("Overall Exposure", className="text-muted mb-1 small fw-semibold"),
-                html.H2(f"{avg_composite:.3f}", className=f"mb-0 score-value score-{level}"),
-                html.Span(
-                    f"{n} products \u00b7 {high_risk} high-risk",
-                    className="text-muted small",
-                ),
-            ])), md=3),
-            dbc.Col(dbc.Card(dbc.CardBody([
-                html.P("Concentration (HHI)", className="text-muted mb-1 small fw-semibold"),
-                html.H3(f"{avg_hhi:.3f}", className="mb-0"),
-            ])), md=3),
-            dbc.Col(dbc.Card(dbc.CardBody([
-                html.P("Geo Risk", className="text-muted mb-1 small fw-semibold"),
-                html.H3(f"{avg_geo:.3f}", className="mb-0"),
-            ])), md=3),
-            dbc.Col(dbc.Card(dbc.CardBody([
-                html.P("Substitutability", className="text-muted mb-1 small fw-semibold"),
-                html.H3(f"{avg_ess:.3f}", className="mb-0"),
-                html.Span(f"{critical_count} strategic", className="text-muted small"),
-            ])), md=3),
-        ], className="g-3"),
-        dbc.Row([
+            hero_cards,
             dbc.Col(
                 dcc.Graph(
                     id="country-overview-radar",
@@ -349,9 +361,136 @@ def update_summary_cards(products, w_hhi, w_geo, w_ess):
                     config={"displayModeBar": False},
                 ),
                 md=4,
-                className="mx-auto mt-3",
             ),
-        ]),
+        ], className="g-3"),
+    ])
+
+
+@callback(
+    Output("country-scatter-container", "children"),
+    [Input("country-selector", "value"),
+     Input("year-store", "data")],
+)
+def update_scatter_plot(country_iso3, year):
+    """Render scatter plot: HHI vs substitutability, sized by import value, coloured by composite (D-03)."""
+    if not country_iso3:
+        return html.Div()
+    scatter = data.get_scatter_data(country_iso3, year=year)
+    if not scatter:
+        return html.Div("No product risk data available.", className="text-muted p-3")
+
+    marker_sizes = [
+        max(5, min(30, 8 * math.log1p(r["total_import_value_usd"] or 1e3)))
+        for r in scatter
+    ]
+    hover_texts = [
+        (
+            f"<b>{r['hs6']}</b><br>"
+            f"{(r['description'] or '')[:60]}<br>"
+            f"Composite: {r['composite_score']:.3f}<br>"
+            f"HHI: {r['hhi']:.3f}<br>"
+            f"Substitutability: {r['substitutability_score']:.3f}"
+        )
+        for r in scatter
+    ]
+
+    fig = go.Figure(go.Scatter(
+        x=[r["hhi"] for r in scatter],
+        y=[r["substitutability_score"] for r in scatter],
+        mode="markers",
+        marker=dict(
+            size=marker_sizes,
+            color=[r["composite_score"] for r in scatter],
+            colorscale=[[0, "#22c55e"], [0.5, "#f59e0b"], [1, "#ef4444"]],
+            cmin=0,
+            cmax=1,
+            showscale=True,
+            colorbar=dict(title="Composite<br>Score", thickness=12),
+            opacity=0.8,
+        ),
+        text=hover_texts,
+        hovertemplate="%{text}<extra></extra>",
+    ))
+    fig.update_layout(
+        xaxis_title="HHI (Concentration)",
+        yaxis_title="Substitutability",
+        template="plotly_white",
+        font_family="Inter",
+        height=400,
+        margin=dict(l=60, r=20, t=20, b=50),
+        showlegend=False,
+    )
+
+    return html.Div([
+        html.H6("Product Risk Landscape", className="fw-semibold mb-2"),
+        dcc.Graph(
+            id="country-scatter-plot",
+            figure=fig,
+            config={"displayModeBar": False},
+        ),
+    ])
+
+
+@callback(
+    Output("country-bilateral-container", "children"),
+    [Input("country-selector", "value"),
+     Input("year-store", "data")],
+)
+def update_bilateral_panel(country_iso3, year):
+    """Render horizontal bar chart of top-10 source countries by weighted risk (D-08)."""
+    if not country_iso3:
+        return html.Div()
+    bilateral = data.get_bilateral_risk(country_iso3, year=year)
+    if not bilateral:
+        return html.Div("No bilateral risk data available.", className="text-muted p-3")
+
+    # Build flag-emoji labels (D-09) using ISO3->ISO2 lookup
+    tick_labels = []
+    for r in bilateral:
+        iso2 = data._ISO3_TO_ISO2.get(r["exporter_iso3"], "").upper()
+        if iso2 and len(iso2) == 2:
+            emoji = "".join(chr(127397 + ord(c)) for c in iso2)
+            tick_labels.append(f"{emoji} {r['exporter_name']}")
+        else:
+            tick_labels.append(r["exporter_name"])
+
+    values = [r["weighted_risk_contribution"] for r in bilateral]
+    geo_risks = [r["mean_geo_risk"] for r in bilateral]
+
+    fig = go.Figure(go.Bar(
+        y=tick_labels,
+        x=values,
+        orientation="h",
+        marker=dict(
+            color=geo_risks,
+            colorscale=[[0, "#22c55e"], [0.5, "#f59e0b"], [1, "#ef4444"]],
+            cmin=0,
+            cmax=1,
+            showscale=True,
+            colorbar=dict(title="Geo<br>Risk", thickness=12),
+        ),
+        text=[f"{v:.3f}" for v in values],
+        textposition="outside",
+        hovertemplate="%{y}: %{x:.3f} weighted risk<extra></extra>",
+    ))
+    fig.update_layout(
+        xaxis_title="Weighted Risk Contribution",
+        xaxis_range=[0, max(values) * 1.25 if values else 1],
+        template="plotly_white",
+        font_family="Inter",
+        height=320,
+        margin=dict(l=160, r=80, t=10, b=40),
+        showlegend=False,
+        yaxis=dict(autorange="reversed"),
+    )
+
+    return html.Div([
+        html.H6("Key Supply Risk Sources", className="fw-semibold mb-2"),
+        dcc.Graph(
+            id="country-bilateral-chart",
+            figure=fig,
+            config={"displayModeBar": False},
+        ),
     ])
 
 
