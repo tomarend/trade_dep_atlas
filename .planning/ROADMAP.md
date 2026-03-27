@@ -189,10 +189,11 @@ Plans:
   1. Score trend line chart labels and tooltip show "Substitutability" not "Essentiality"
   2. AG Grid product tables have a "Trend" column with SVG sparklines (6 data points, 60×20px)
   3. Sparklines render without AG Grid Enterprise errors in browser console
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — TBD
+- [ ] 09-01-PLAN.md — Sparkline data queries (data.py) + TrendSparkline SVG cellRenderer (JS)
+- [ ] 09-02-PLAN.md — Wire sparklines into both AG Grid tables + TIME-04 trend chart label cleanup
 
 ## Progress
 
