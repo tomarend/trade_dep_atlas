@@ -192,7 +192,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 09-01-PLAN.md — Sparkline data queries (data.py) + TrendSparkline SVG cellRenderer (JS)
+- [x] 09-01-PLAN.md — Sparkline data queries (data.py) + TrendSparkline SVG cellRenderer (JS)
 - [ ] 09-02-PLAN.md — Wire sparklines into both AG Grid tables + TIME-04 trend chart label cleanup
 
 ## Progress

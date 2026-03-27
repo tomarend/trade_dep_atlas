@@ -1,16 +1,21 @@
----
+"""Rewrite corrupted STATE.md with clean v2.0 content."""
+import pathlib
+
+BASE = pathlib.Path("/Users/tom/Documents/git/dashboard_trade_crit_dep/.planning")
+
+STATE = """---
 gsd_state_version: 1.0
 milestone: v2.0
-milestone_name: "Milestone: Dashboard Redesign"
-status: executing
-stopped_at: Requirements and roadmap updated for v2.0 — next step is planning phases
-last_updated: "2026-03-27T12:34:10.839Z"
-last_activity: 2026-03-27 -- Phase 09 execution started
+milestone_name: Dashboard Redesign
+status: planning
+stopped_at: Requirements and roadmap defined — ready to plan phases
+last_updated: "2026-03-26"
+last_activity: 2026-03-26 — Roadmap and requirements updated for v2.0
 progress:
-  total_phases: 10
-  completed_phases: 9
-  total_plans: 29
-  completed_plans: 27
+  total_phases: 3
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
   percent: 0
 ---
 
@@ -21,21 +26,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** Instantly reveal which products make a country vulnerable due to concentrated, geopolitically risky import sources — and how that exposure has evolved over time.
-**Current focus:** Phase 09 — time-series
+**Current focus:** v2.0 — Pipeline + scoring rework, dashboard redesign, time series
 
 ## Current Position
 
-Phase: 09 (time-series) — EXECUTING
-Plan: 1 of 2
-Status: Executing Phase 09
-Last activity: 2026-03-27 -- Phase 09 execution started
+Phase: Phase 7 (not started — planning)
+Plan: —
+Status: Requirements and roadmap defined, ready to plan phases 7-9
+Last activity: 2026-03-26 — v2.0 milestone started, ROADMAP and REQUIREMENTS updated
 
 Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
-
 - No plans completed yet in v2.0
 
 | Phase | Plans | Completed | Avg/Plan |
@@ -70,3 +74,9 @@ Trend: —
 Last session: 2026-03-26
 Stopped at: Requirements and roadmap updated for v2.0 — next step is planning phases
 Next step: `/gsd:discuss-phase 7` to plan Phase 7 (Pipeline & Scoring Rework)
+"""
+
+state_path = BASE / "STATE.md"
+state_path.write_text(STATE)
+print(f"STATE.md rewritten: {len(STATE)} chars")
+print("Done.")
