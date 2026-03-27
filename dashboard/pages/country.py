@@ -184,6 +184,15 @@ def layout(**kwargs):
                         "filter": "agTextColumnFilter",
                         "valueFormatter": {"function": "(params.value || []).join(', ')"},
                     },
+                    {
+                        "field": "sparkline",
+                        "headerName": "Trend",
+                        "width": 80,
+                        "cellRenderer": "TrendSparkline",
+                        "sortable": False,
+                        "filter": False,
+                        "resizable": False,
+                    },
                 ],
                 defaultColDef={
                     "sortable": True,
@@ -270,7 +279,11 @@ def load_country_data(country_iso3, year):
     """Load product scores for the selected country and year into the client-side store."""
     if not country_iso3:
         return no_update
-    return data.get_product_scores(country_iso3, year=year)
+    products = data.get_product_scores(country_iso3, year=year)
+    sparklines = data.get_sparklines_for_country(country_iso3)
+    for p in products:
+        p["sparkline"] = sparklines.get(p["hs6"], [])
+    return products
 
 
 @callback(
@@ -654,7 +667,7 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
         composite_vals = [trend_by_year[y]["composite_score"] if y in trend_by_year else None for y in all_years]
         hhi_vals = [trend_by_year[y]["hhi"] if y in trend_by_year else None for y in all_years]
         geo_vals = [trend_by_year[y]["basket_geo_risk"] if y in trend_by_year else None for y in all_years]
-        ess_vals = [trend_by_year[y]["substitutability_score"] if y in trend_by_year else None for y in all_years]
+        subst_vals = [trend_by_year[y]["substitutability_score"] if y in trend_by_year else None for y in all_years]
 
         trend_fig = go.Figure()
         trend_fig.add_trace(go.Scatter(
@@ -673,8 +686,10 @@ def render_drilldown(selected_rows, country_iso3, w_hhi, w_geo, w_ess, year):
             visible="legendonly", connectgaps=False,
         ))
         trend_fig.add_trace(go.Scatter(
-            x=years, y=ess_vals, mode="lines",
-            name="Substitutability", line=dict(color="#059669", width=1.5, dash="dot"),
+            x=years, y=subst_vals, mode="lines",
+            name="Substitutability",
+            hovertemplate="Substitutability: %{y:.3f}<br>√(global export HHI)<extra></extra>",
+            line=dict(color="#059669", width=1.5, dash="dot"),
             visible="legendonly", connectgaps=False,
         ))
         trend_fig.add_vline(

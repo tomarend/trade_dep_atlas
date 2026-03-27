@@ -204,6 +204,15 @@ def layout(**kwargs):
                         "filter": "agTextColumnFilter",
                         "valueFormatter": {"function": "(params.value || []).join(', ')"},
                     },
+                    {
+                        "field": "sparkline",
+                        "headerName": "Trend",
+                        "width": 80,
+                        "cellRenderer": "TrendSparkline",
+                        "sortable": False,
+                        "filter": False,
+                        "resizable": False,
+                    },
                 ],
                 defaultColDef={
                     "sortable": True,
@@ -277,7 +286,11 @@ def load_product_data(hs6, year):
     """Load importer scores for the selected product and year into the store."""
     if not hs6:
         return no_update
-    return data.get_importer_scores(hs6, year=year)
+    importers = data.get_importer_scores(hs6, year=year)
+    sparklines = data.get_sparklines_for_product(hs6)
+    for imp in importers:
+        imp["sparkline"] = sparklines.get(imp["importer_iso3"], [])
+    return importers
 
 
 @callback(
@@ -542,7 +555,7 @@ def update_product_trend(hs6, year):
     composite_vals = [trend_by_year[y]["composite_score"] if y in trend_by_year else None for y in all_years]
     hhi_vals = [trend_by_year[y]["hhi"] if y in trend_by_year else None for y in all_years]
     geo_vals = [trend_by_year[y]["basket_geo_risk"] if y in trend_by_year else None for y in all_years]
-    ess_vals = [trend_by_year[y]["substitutability_score"] if y in trend_by_year else None for y in all_years]
+    subst_vals = [trend_by_year[y]["substitutability_score"] if y in trend_by_year else None for y in all_years]
 
     trend_fig = go.Figure()
     trend_fig.add_trace(go.Scatter(
@@ -561,8 +574,10 @@ def update_product_trend(hs6, year):
         visible="legendonly", connectgaps=False,
     ))
     trend_fig.add_trace(go.Scatter(
-        x=all_years, y=ess_vals, mode="lines",
-        name="Substitutability", line=dict(color="#059669", width=1.5, dash="dot"),
+        x=all_years, y=subst_vals, mode="lines",
+        name="Substitutability",
+        hovertemplate="Substitutability: %{y:.3f}<br>√(global export HHI)<extra></extra>",
+        line=dict(color="#059669", width=1.5, dash="dot"),
         visible="legendonly", connectgaps=False,
     ))
     trend_fig.add_vline(
